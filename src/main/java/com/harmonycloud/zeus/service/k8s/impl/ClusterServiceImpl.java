@@ -1,7 +1,6 @@
 package com.harmonycloud.zeus.service.k8s.impl;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.caas.common.enums.DictEnum;
 import com.harmonycloud.caas.common.enums.ErrorCodeMessage;
 import com.harmonycloud.caas.common.enums.ErrorMessage;
@@ -14,11 +13,9 @@ import com.harmonycloud.zeus.integration.cluster.ClusterWrapper;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareCluster;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareClusterInfo;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareClusterSpec;
-import com.harmonycloud.zeus.service.k8s.ClusterCertService;
-import com.harmonycloud.zeus.service.k8s.ClusterService;
-import com.harmonycloud.zeus.service.k8s.NamespaceService;
-import com.harmonycloud.zeus.service.k8s.NodeService;
+import com.harmonycloud.zeus.service.k8s.*;
 import com.harmonycloud.zeus.service.log.EsComponentService;
+import com.harmonycloud.zeus.service.middleware.EsService;
 import com.harmonycloud.zeus.service.registry.RegistryService;
 import com.harmonycloud.zeus.util.K8sClient;
 import com.harmonycloud.tool.date.DateUtils;
@@ -26,6 +23,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -72,6 +70,10 @@ public class ClusterServiceImpl implements ClusterService {
     private EsComponentService esComponentService;
     @Autowired
     private ClusterService clusterService;
+    @Autowired
+    private K8sDefaultCluster k8sDefaultCluster;
+    @Autowired
+    private EsService esService;
 
     @Value("${k8s.component.logging.es.user:elastic}")
     private String esUser;
@@ -156,6 +158,7 @@ public class ClusterServiceImpl implements ClusterService {
         putIntoClusterMap(SerializationUtils.clone(cluster));
     }
 
+
     @Override
     public MiddlewareClusterDTO findById(String clusterId) {
         MiddlewareClusterDTO dto = getFromClusterMap(clusterId);
@@ -196,7 +199,7 @@ public class ClusterServiceImpl implements ClusterService {
 
         // 校验registry
         registryService.validate(cluster.getRegistry());
-
+        
         // 校验es
         if (StringUtils.isNotBlank(cluster.getLogging().getElasticSearch().getHost())
             && !esComponentService.checkEsConnection(cluster)) {
@@ -229,10 +232,21 @@ public class ClusterServiceImpl implements ClusterService {
         // 保存证书
         try {
             clusterCertService.saveCert(cluster);
+            //若为第一个集群 则将clusterId, url, serviceAccount存入数据库
+            if (k8sDefaultCluster.get() == null){
+                k8sDefaultCluster.create(cluster);
+            }
         } catch (Exception e) {
             log.error("集群{}，保存证书异常", cluster.getId(), e);
         }
-
+        //初始化集群模板
+        try {
+            RestHighLevelClient esClient = esService.getEsClient(cluster);
+            esService.initMysqlSlowLogIndexTemplate(esClient);
+            log.info("集群:{}索引模板初始化成功", cluster.getName());
+        }catch (Exception e){
+            log.error("集群:{}索引模板初始化失败", cluster.getName(), e);
+        }
         // 放入map
         putIntoClusterMap(cluster);
 
@@ -325,12 +339,12 @@ public class ClusterServiceImpl implements ClusterService {
         if (StringUtils.isBlank(cluster.getRegistry().getImageRepo())) {
             cluster.getRegistry().setImageRepo(cluster.getRegistry().getChartRepo());
         }
-
+        
         // 设置ingress
         if (cluster.getIngress().getTcp() == null) {
             cluster.getIngress().setTcp(new MiddlewareClusterIngress.IngressConfig());
         }
-
+        
         // 设置es信息
         if (cluster.getLogging() == null) {
             cluster.setLogging(new MiddlewareClusterLogging());
@@ -350,7 +364,7 @@ public class ClusterServiceImpl implements ClusterService {
                 cluster.getLogging().getElasticSearch().setUser(esUser).setPassword(esPassword);
             }
         }
-
+        
         // 设置存储限额
         if (cluster.getStorage() == null) {
             cluster.setStorage(new HashMap<>());
@@ -386,11 +400,11 @@ public class ClusterServiceImpl implements ClusterService {
     private Collection<MiddlewareClusterDTO> listFromClusterMap() {
         return CLUSTER_MAP.values();
     }
-
+    
     private void putIntoClusterMap(MiddlewareClusterDTO cluster) {
         CLUSTER_MAP.put(cluster.getId(), cluster);
     }
-
+    
     private void removeFromClusterMap(String clusterId) {
         CLUSTER_MAP.remove(clusterId);
     }
@@ -442,7 +456,7 @@ public class ClusterServiceImpl implements ClusterService {
         return new MiddlewareCluster().setMetadata(meta).setSpec(new MiddlewareClusterSpec().setInfo(clusterInfo));
     }
 
-    private void createMiddlewareCrd(String clusterId) {
+    private void createMiddlewareCrd(String clusterId){
         MiddlewareClusterDTO middlewareClusterDTO = clusterService.findById(clusterId);
 
         boolean error = false;
@@ -450,8 +464,8 @@ public class ClusterServiceImpl implements ClusterService {
         try {
             String execCommand;
             execCommand = MessageFormat.format(
-                "kubectl create -f {0} --server={1} --token={2} --insecure-skip-tls-verify=true",
-                middlewareCrdYamlPath, middlewareClusterDTO.getAddress(), middlewareClusterDTO.getAccessToken());
+                    "kubectl create -f {0} --server={1} --token={2} --insecure-skip-tls-verify=true",
+                    middlewareCrdYamlPath, middlewareClusterDTO.getAddress(), middlewareClusterDTO.getAccessToken());
             log.info("执行kubectl命令：{}", execCommand);
             String[] commands = execCommand.split(" ");
             process = Runtime.getRuntime().exec(commands);
@@ -481,5 +495,6 @@ public class ClusterServiceImpl implements ClusterService {
             }
         }
     }
+
 
 }

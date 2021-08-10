@@ -1,11 +1,20 @@
 package com.harmonycloud.zeus.service.middleware.impl;
 
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.harmonycloud.zeus.bean.BeanCustomConfig;
+import com.harmonycloud.zeus.bean.BeanCustomConfigHistory;
+import com.harmonycloud.zeus.dao.BeanCustomConfigHistoryMapper;
+import com.harmonycloud.zeus.dao.BeanCustomConfigMapper;
 import com.harmonycloud.zeus.service.AbstractBaseService;
+import com.harmonycloud.zeus.service.k8s.ClusterService;
+import com.harmonycloud.zeus.service.k8s.ConfigMapService;
+import com.harmonycloud.zeus.service.k8s.PodService;
 import com.harmonycloud.zeus.service.middleware.MiddlewareCustomConfigService;
+import com.harmonycloud.zeus.service.registry.HelmChartService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,21 +23,12 @@ import org.springframework.util.CollectionUtils;
 import org.yaml.snakeyaml.Yaml;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.exception.CaasRuntimeException;
 import com.harmonycloud.caas.common.model.middleware.*;
 import com.harmonycloud.caas.common.model.registry.HelmChartFile;
 import com.harmonycloud.caas.common.util.ThreadPoolExecutorFactory;
-import com.harmonycloud.zeus.bean.BeanCustomConfig;
-import com.harmonycloud.zeus.bean.BeanCustomConfigHistory;
-import com.harmonycloud.zeus.dao.BeanCustomConfigHistoryMapper;
-import com.harmonycloud.zeus.dao.BeanCustomConfigMapper;
-import com.harmonycloud.zeus.service.k8s.ClusterService;
-import com.harmonycloud.zeus.service.k8s.ConfigMapService;
-import com.harmonycloud.zeus.service.k8s.PodService;
-import com.harmonycloud.zeus.service.registry.HelmChartService;
 import com.harmonycloud.tool.date.DateUtils;
 
 import lombok.extern.slf4j.Slf4j;
@@ -82,7 +82,7 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
             BeanUtils.copyProperties(beanCustomConfig, customConfig);
             customConfig.setValue(data.getOrDefault(customConfig.getName(), ""));
             customConfig.setParamType(customConfig.getRanges().contains("|") ? "select" : "input");
-            if ("sql_mode".equals(beanCustomConfig.getName())) {
+            if ("sql_mode".equals(beanCustomConfig.getName())){
                 customConfig.setParamType("multiSelect");
             }
             customConfigList.add(customConfig);
@@ -102,7 +102,7 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
         if (CollectionUtils.isEmpty(data)) {
             // 从parameter.yaml文件创建一份
             QueryWrapper<BeanCustomConfig> wrapper = new QueryWrapper<BeanCustomConfig>()
-                .eq("chart_name", middleware.getType()).eq("chart_version", values.getString("chart-version"));
+                    .eq("chart_name", middleware.getType()).eq("chart_version", values.getString("chart-version"));
             List<BeanCustomConfig> beanCustomConfigList = beanCustomConfigMapper.selectList(wrapper);
             beanCustomConfigList.forEach(c -> data.put(c.getName(), c.getDefaultValue()));
         }
@@ -125,7 +125,7 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
             }
             data.put(customConfig.getName(), customConfig.getValue());
         }
-        updateValues(middleware, data, cluster);
+        updateValues(middleware, data, cluster, values);
         // 添加修改历史
         this.addCustomConfigHistory(config.getName(), oldDate, config);
         if (restart) {
@@ -156,8 +156,7 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
             Date start = DateUtils.addInteger(DateUtils.parseDate(startTime, DateUtils.YYYY_MM_DD_T_HH_MM_SS_Z),
                 Calendar.HOUR_OF_DAY, -8);
             Date end = DateUtils.addInteger(DateUtils
-                    .addInteger(DateUtils.parseDate(endTime, DateUtils.YYYY_MM_DD_T_HH_MM_SS_Z),
-                        Calendar.DAY_OF_MONTH, 1),
+                .addInteger(DateUtils.parseDate(endTime, DateUtils.YYYY_MM_DD_T_HH_MM_SS_Z), Calendar.DAY_OF_MONTH, 1),
                 Calendar.HOUR_OF_DAY, -8);
             beanCustomConfigHistoryList = beanCustomConfigHistoryList.stream()
                 .filter(beanCustomConfigHistory -> beanCustomConfigHistory.getDate().after(start)
@@ -178,9 +177,9 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
     }
 
     @Override
-    public List<BeanCustomConfig> updateConfig2MySQL(HelmChartFile helmChartFile) throws Exception {
+    public List<BeanCustomConfig> updateConfig2MySQL(HelmChartFile helmChartFile) throws Exception{
         QueryWrapper<BeanCustomConfig> wrapper = new QueryWrapper<BeanCustomConfig>()
-            .eq("chart_name", helmChartFile.getChartName()).eq("chart_version", helmChartFile.getChartVersion());
+                .eq("chart_name", helmChartFile.getChartName()).eq("chart_version", helmChartFile.getChartVersion());
         List<BeanCustomConfig> beanCustomConfigList = beanCustomConfigMapper.selectList(wrapper);
         return updateConfig2MySQL(helmChartFile, !CollectionUtils.isEmpty(beanCustomConfigList));
     }
@@ -256,7 +255,7 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
                     for (PodInfo podInfo : middleware.getPods()) {
                         Date date =
                             DateUtils.addInteger(DateUtils.parseDate(StringUtils.isEmpty(podInfo.getLastRestartTime())
-                                    ? podInfo.getCreateTime() : podInfo.getLastRestartTime(),
+                                ? podInfo.getCreateTime() : podInfo.getLastRestartTime(),
                                 DateUtils.YYYY_MM_DD_T_HH_MM_SS_Z), Calendar.HOUR_OF_DAY, 8);
                         if (customConfigHistoryDTO.getDate().after(date)) {
                             status = false;
@@ -302,18 +301,18 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
     /**
      * 正则匹配
      */
-    public boolean checkPattern(CustomConfig customConfig) {
-        if (StringUtils.isNotEmpty(customConfig.getPattern())) {
+    public boolean checkPattern(CustomConfig customConfig){
+        if (StringUtils.isNotEmpty(customConfig.getPattern())){
             return Pattern.matches(customConfig.getPattern(), customConfig.getValue());
         }
         return true;
     }
 
-    public Map<String, String> getConfigFromValues(Middleware middleware, JSONObject values) {
+    public Map<String, String> getConfigFromValues(Middleware middleware, JSONObject values){
         Map<String, String> data = new HashMap<>();
-        if (values.containsKey("args")) {
+        if (values.containsKey("args")){
             JSONObject args = values.getJSONObject("args");
-            for (String key : args.keySet()) {
+            for (String key : args.keySet()){
                 data.put(key, args.getString(key));
             }
         }
@@ -323,18 +322,21 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
     /**
      * 更新values.yaml
      */
-    public void updateValues(Middleware middleware, Map<String, String> dataMap, MiddlewareClusterDTO cluster) {
-        StringBuilder sb = new StringBuilder();
+    public void updateValues(Middleware middleware, Map<String, String> dataMap, MiddlewareClusterDTO cluster,
+        JSONObject values) {
+        JSONObject newValues = JSONObject.parseObject(values.toJSONString());
+        JSONObject args = newValues.getJSONObject("args");
         for (String key : dataMap.keySet()) {
-            sb.append("args.").append(key).append("=").append(dataMap.get(key)).append(",");
+            Pattern pattern = Pattern.compile("[0-9]*");
+            Matcher isNum = pattern.matcher(dataMap.get(key));
+            if (isNum.matches()) {
+                args.put(key, Integer.parseInt(dataMap.get(key)));
+            } else {
+                args.put(key, dataMap.get(key));
+            }
         }
-        // 没有修改，直接返回
-        if (sb.length() == 0) {
-            return;
-        }
-        // 去掉末尾的逗号
-        sb.deleteCharAt(sb.length() - 1);
-        helmChartService.upgrade(middleware, sb.toString(), cluster);
+        helmChartService.upgradeCustomConfig(middleware, values, newValues, cluster);
     }
+
 
 }

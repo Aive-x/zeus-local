@@ -44,8 +44,8 @@ public class ScheduleBackupServiceImpl implements ScheduleBackupService {
             return null;
         }
         scheduleBackupCRDList = scheduleBackupCRDList.stream()
-            .filter(scheduleBackup -> scheduleBackup.getSpec().getBackupTemplate().getClusterName().equals(name))
-            .collect(Collectors.toList());
+                .filter(scheduleBackup -> scheduleBackup.getSpec().getBackupTemplate().getClusterName().equals(name))
+                .collect(Collectors.toList());
 
         List<ScheduleBackup> scheduleBackupList = new ArrayList<>();
         scheduleBackupCRDList.forEach(scheduleBackupCRD -> {

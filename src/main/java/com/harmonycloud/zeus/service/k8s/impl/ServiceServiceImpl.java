@@ -48,8 +48,7 @@ public class ServiceServiceImpl implements ServiceService {
             if (StringUtils.isBlank(middlewareInfo.getName())) {
                 continue;
             }
-            io.fabric8.kubernetes.api.model.Service service = serviceWrapper.get(clusterId, namespace,
-                middlewareInfo.getName());
+            io.fabric8.kubernetes.api.model.Service service = serviceWrapper.get(clusterId, namespace, middlewareInfo.getName());
             if (service == null || service.getSpec() == null) {
                 continue;
             }

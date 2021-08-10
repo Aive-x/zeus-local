@@ -15,7 +15,6 @@ public interface IngressService {
 
     /**
      * 查询中间件对外访问列表
-     *
      * @param clusterId
      * @param namespace
      * @param keyword
@@ -50,8 +49,7 @@ public interface IngressService {
      * @param serviceList 服务列表
      * @param checkPort   校验端口
      */
-    void createIngressTcp(MiddlewareClusterDTO cluster, String namespace, List<ServiceDTO> serviceList,
-        boolean checkPort);
+    void createIngressTcp(MiddlewareClusterDTO cluster, String namespace, List<ServiceDTO> serviceList, boolean checkPort);
 
     /**
      * 删除中间件对外访问
@@ -87,15 +85,14 @@ public interface IngressService {
      * @param protocol       协议
      * @return
      */
-    IngressDTO get(String clusterId, String namespace, String type, String middlewareName, String name,
-        String exposeType, String protocol);
+    IngressDTO get(String clusterId, String namespace, String type, String middlewareName, String name, String exposeType, String protocol);
 
     /**
      * 查询中间件ingress列表
      *
-     * @param clusterId       集群id
-     * @param namespace       命名空间
-     * @param helmReleaseName label键
+     * @param clusterId  集群id
+     * @param namespace  命名空间
+     * @param helmReleaseName   label键
      * @return
      */
     List<IngressRuleDTO> getHelmIngress(String clusterId, String namespace, String helmReleaseName);

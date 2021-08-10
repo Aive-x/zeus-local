@@ -26,12 +26,12 @@ public class SecretController {
 
     @ApiOperation(value = "查询secret列表", notes = "查询secret列表")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class)
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class)
     })
     @GetMapping
     public BaseResult list(@PathVariable("clusterId") String clusterId,
-        @PathVariable("namespace") String namespace) {
+                           @PathVariable("namespace") String namespace) {
         return BaseResult.ok(secretService.list(clusterId, namespace));
     }
 

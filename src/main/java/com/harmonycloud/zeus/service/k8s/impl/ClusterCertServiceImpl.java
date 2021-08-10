@@ -98,6 +98,7 @@ public class ClusterCertServiceImpl implements ClusterCertService {
         }
     }
 
+
     /**
      * 构建admin.conf证书文件
      */
@@ -256,7 +257,7 @@ public class ClusterCertServiceImpl implements ClusterCertService {
             AuthInfo user = KubeConfigUtils.getUserAuthInfo(config, currentContext);
             if (user == null
                 || StringUtils.isEmpty(user.getClientCertificateData())
-                && StringUtils.isEmpty(user.getClientCertificate())
+                    && StringUtils.isEmpty(user.getClientCertificate())
                 || StringUtils.isEmpty(user.getClientKeyData()) && StringUtils.isEmpty(user.getClientKey())) {
                 throw new BusinessException(DictEnum.CERTIFICATE, ErrorMessage.AUTH_FAILED);
             }

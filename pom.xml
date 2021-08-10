@@ -10,8 +10,8 @@
     </parent>
 
     <groupId>com.harmonycloud.zeus</groupId>
-    <artifactId>zues</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <artifactId>middleware</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
     <name>middleware</name>
     <description>zeus middleware platform</description>
 
@@ -36,7 +36,7 @@
         <evosuite.version>1.0.6</evosuite.version>
         <junit.version>4.12</junit.version>
 
-        <!-- harmony cloud package -->
+        <!-- harmonycloud -->
         <caas.version>3.0.1-middleware</caas.version>
         <harmonycloud.tools.version>1.0.1-middleware</harmonycloud.tools.version>
         <auth0.jwt.version>3.8.3</auth0.jwt.version>
@@ -79,30 +79,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
-        <!-- harmony cloud package -->
-        <dependency>
-            <groupId>com.harmonycloud.caas</groupId>
-            <artifactId>common</artifactId>
-            <version>${caas.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.harmonycloud.caas</groupId>
-            <artifactId>filters</artifactId>
-            <version>3.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.harmonycloud</groupId>
-            <artifactId>tools</artifactId>
-            <version>${harmonycloud.tools.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.squareup.okhttp3</groupId>
-                    <artifactId>okhttp</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
 
-        <!-- opensource package -->
         <!-- minio -->
         <dependency>
             <groupId>io.minio</groupId>
@@ -115,6 +92,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <!-- mybatis -->
         <dependency>
             <groupId>mysql</groupId>
@@ -141,16 +119,19 @@
             <artifactId>pagehelper-spring-boot-starter</artifactId>
             <version>1.3.1</version>
         </dependency>
+
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>${alibaba.fastjson.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${commons-lang3.version}</version>
         </dependency>
+
         <!-- fabric8 -->
         <dependency>
             <groupId>io.fabric8</groupId>
@@ -164,23 +145,43 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <!-- swagger -->
         <dependency>
             <groupId>io.springfox</groupId>
             <artifactId>springfox-boot-starter</artifactId>
             <version>${swagger.version}</version>
         </dependency>
+
         <!-- lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
         <!-- pty4j -->
         <dependency>
             <groupId>org.jetbrains.pty4j</groupId>
             <artifactId>pty4j</artifactId>
             <version>${pty4j.version}</version>
+        </dependency>
+
+        <!-- junit -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.junit.vintage</groupId>
+                    <artifactId>junit-vintage-engine</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mockito</groupId>
+                    <artifactId>mockito-junit-jupiter</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -206,6 +207,24 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- harmonycloud -->
+        <dependency>
+            <groupId>com.harmonycloud.caas</groupId>
+            <artifactId>common</artifactId>
+            <version>${caas.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.harmonycloud</groupId>
+            <artifactId>tools</artifactId>
+            <version>${harmonycloud.tools.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.squareup.okhttp3</groupId>
+                    <artifactId>okhttp</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
@@ -216,6 +235,12 @@
             <artifactId>java-jwt</artifactId>
             <version>${auth0.jwt.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.harmonycloud.caas</groupId>
+            <artifactId>filters</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>transport</artifactId>
@@ -231,22 +256,7 @@
             <artifactId>elasticsearch-rest-high-level-client</artifactId>
             <version>${elasticsearch.version}</version>
         </dependency>
-        <!-- junit -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.junit.vintage</groupId>
-                    <artifactId>junit-vintage-engine</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.mockito</groupId>
-                    <artifactId>mockito-junit-jupiter</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+
     </dependencies>
 
     <build>

@@ -1,7 +1,6 @@
 package com.harmonycloud.zeus.service.registry;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.caas.common.model.middleware.Middleware;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
 import com.harmonycloud.caas.common.model.middleware.QuestionYaml;
@@ -43,8 +42,8 @@ public interface HelmChartService {
      *
      * @param clusterId 集群
      * @param namespace 分区
-     * @param type      类型
-     * @param name      名称
+     * @param type 类型
+     * @param name 名称
      * @return
      */
     HelmChartFile getHelmChartFromRegistry(String clusterId, String namespace, String name, String type);
@@ -80,7 +79,7 @@ public interface HelmChartService {
      * 把新的yaml内容覆盖掉本地文件(template内文件)
      *
      * @param helmChart helm chart信息
-     * @param fileName  文件名
+     * @param fileName 文件名
      */
     void coverTemplateFile(HelmChartFile helmChart, String fileName);
 
@@ -125,25 +124,23 @@ public interface HelmChartService {
 
     /**
      * 发布helm chart包
-     *
-     * @param middleware  中间件信息
-     * @param tgzFilePath tgz文件的绝对路径（包含文件名）
-     * @param cluster     集群信息
+     * @param middleware    中间件信息
+     * @param tgzFilePath   tgz文件的绝对路径（包含文件名）
+     * @param cluster       集群信息
      */
     void install(Middleware middleware, String tgzFilePath, MiddlewareClusterDTO cluster);
 
     /**
      * 发布helm chart包
      *
-     * @param name         helm发布的实例名称
-     * @param namespace    命名空间
-     * @param chartName    chart包名称
-     * @param chartVersion chart包版本
-     * @param tgzFilePath  tgz文件的绝对路径（包含文件名）
-     * @param cluster      集群信息
+     * @param name          helm发布的实例名称
+     * @param namespace     命名空间
+     * @param chartName     chart包名称
+     * @param chartVersion  chart包版本
+     * @param tgzFilePath   tgz文件的绝对路径（包含文件名）
+     * @param cluster       集群信息
      */
-    void install(String name, String namespace, String chartName, String chartVersion, String tgzFilePath,
-        MiddlewareClusterDTO cluster);
+    void install(String name, String namespace, String chartName, String chartVersion, String tgzFilePath, MiddlewareClusterDTO cluster);
 
     /**
      * 更新已发布的helm chart
@@ -153,6 +150,16 @@ public interface HelmChartService {
      * @param cluster      集群信息
      */
     void upgrade(Middleware middleware, String updateValues, MiddlewareClusterDTO cluster);
+
+    /**
+     * 更新自定义配置参数
+     *
+     * @param middleware   中间件信息
+     * @param values       values
+     * @param newValues    新values
+     * @param cluster      集群信息
+     */
+    void upgradeCustomConfig(Middleware middleware, JSONObject values, JSONObject newValues, MiddlewareClusterDTO cluster);
 
     /**
      * 更新/发布 chart
@@ -165,7 +172,7 @@ public interface HelmChartService {
      * @param cluster      集群信息
      */
     void upgradeInstall(String name, String namespace, String setValues, String chartName, String chartVersion,
-        MiddlewareClusterDTO cluster);
+                        MiddlewareClusterDTO cluster);
 
     /**
      * 更新/发布 chart
@@ -197,7 +204,7 @@ public interface HelmChartService {
     /**
      * 修改operator chart包中values的内容
      *
-     * @param clusterId         集群id
+     * @param clusterId 集群id
      * @param operatorChartPath chart包位置
      */
     void editOperatorChart(String clusterId, String operatorChartPath, String name);

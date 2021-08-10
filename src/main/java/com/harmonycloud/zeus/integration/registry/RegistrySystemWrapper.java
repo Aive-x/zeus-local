@@ -15,7 +15,7 @@ import com.harmonycloud.tool.api.common.ApiException;
  */
 @Component
 public class RegistrySystemWrapper {
-
+    
     public V1SystemInfo getSystemInfo(Registry registry) {
         V1SystemApi systemApi = new V1SystemApi(RegistryClientFactory.getClient(registry));
         try {

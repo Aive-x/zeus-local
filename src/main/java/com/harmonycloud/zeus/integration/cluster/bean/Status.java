@@ -1,7 +1,6 @@
 package com.harmonycloud.zeus.integration.cluster.bean;
 
 import com.alibaba.fastjson.annotation.JSONField;
-
 import lombok.Data;
 import lombok.experimental.Accessors;
 

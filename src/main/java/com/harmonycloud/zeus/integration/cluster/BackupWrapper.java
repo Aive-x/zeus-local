@@ -1,7 +1,6 @@
 package com.harmonycloud.zeus.integration.cluster;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.zeus.integration.cluster.bean.BackupCRD;
 import com.harmonycloud.zeus.integration.cluster.bean.BackupList;
 import com.harmonycloud.zeus.util.K8sClient;
@@ -24,23 +23,24 @@ import static com.harmonycloud.caas.common.constants.middleware.MiddlewareConsta
 public class BackupWrapper {
 
     private static final CustomResourceDefinitionContext CONTEXT = new CustomResourceDefinitionContext.Builder()
-        .withGroup(MIDDLEWARE_MYSQL_GROUP)
-        .withVersion(MIDDLEWARE_INCLUDE_VERSION)
-        .withScope(NAMESPACED)
-        .withPlural(MYSQL_BACKUP)
-        .build();
-
+            .withGroup(MIDDLEWARE_MYSQL_GROUP)
+            .withVersion(MIDDLEWARE_INCLUDE_VERSION)
+            .withScope(NAMESPACED)
+            .withPlural(MYSQL_BACKUP)
+            .build();
+    
     /**
      * 获取备份
      */
-    public List<BackupCRD> list(String clusterId, String namespace) {
+    public List<BackupCRD> list(String clusterId, String namespace){
         Map<String, Object> map = K8sClient.getClient(clusterId).customResource(CONTEXT).list(namespace);
         BackupList backupList = JSONObject.parseObject(JSONObject.toJSONString(map), BackupList.class);
-        if (backupList == null || CollectionUtils.isEmpty(backupList.getItems())) {
+        if (backupList == null || CollectionUtils.isEmpty(backupList.getItems())){
             return new ArrayList<>();
         }
         return backupList.getItems();
     }
+
 
     /**
      * 创建备份
@@ -56,5 +56,6 @@ public class BackupWrapper {
     public void delete(String clusterId, String namespace, String name) throws Exception {
         K8sClient.getClient(clusterId).customResource(CONTEXT).delete(namespace, name);
     }
+
 
 }

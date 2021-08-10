@@ -96,9 +96,9 @@ public class IngressServiceImpl implements IngressService {
             dealTcpRoutine(clusterId, namespace, configMap, ingressDtoList);
         }
 
+
         // nodePort routing list
-        List<io.fabric8.kubernetes.api.model.Service> serviceList = serviceWrapper.list(clusterId, namespace,
-            MIDDLEWARE_NAME);
+        List<io.fabric8.kubernetes.api.model.Service> serviceList = serviceWrapper.list(clusterId, namespace, MIDDLEWARE_NAME);
         dealNodePortRoutineList(clusterId, namespace, serviceList, ingressDtoList);
 
         if (CollectionUtils.isEmpty(ingressDtoList)) {
@@ -106,7 +106,7 @@ public class IngressServiceImpl implements IngressService {
         }
 
         // package assembly
-        Map<String, Middleware> middlewareMap = getMiddlewareMap(clusterId, namespace);
+        Map<String, Middleware> middlewareMap = getMiddlewareMap(clusterId,namespace);
         if (middlewareMap != null && !middlewareMap.isEmpty()) {
             for (IngressDTO ingressDTO : ingressDtoList) {
                 if (middlewareMap.get(ingressDTO.getMiddlewareName()) == null) {
@@ -120,9 +120,9 @@ public class IngressServiceImpl implements IngressService {
         }
 
         boolean filter = StringUtils.isNotBlank(keyword);
-        return ingressDtoList.stream().filter(ingress -> !filter || StringUtils.contains(ingress.getName(), keyword))
-            .collect(Collectors.toList());
+        return ingressDtoList.stream().filter(ingress -> !filter || StringUtils.contains(ingress.getName(), keyword)).collect(Collectors.toList());
     }
+
 
     @Override
     public void create(String clusterId, String namespace, String middlewareName, IngressDTO ingressDTO) {
@@ -145,8 +145,7 @@ public class IngressServiceImpl implements IngressService {
                 configMapWrapper.update(clusterId, getIngressTcpNamespace(cluster), configMap);
             }
         } else if (StringUtils.equals(ingressDTO.getExposeType(), MIDDLEWARE_EXPOSE_NODEPORT)) {
-            List<io.fabric8.kubernetes.api.model.Service> serviceList = covertNodePortService(clusterId, namespace,
-                middlewareName, ingressDTO);
+            List<io.fabric8.kubernetes.api.model.Service> serviceList = covertNodePortService(clusterId, namespace, middlewareName, ingressDTO);
             if (CollectionUtils.isEmpty(serviceList)) {
                 throw new CaasRuntimeException(ErrorMessage.INGRESS_NODEPORT_NOT_NULL);
             }
@@ -187,8 +186,8 @@ public class IngressServiceImpl implements IngressService {
     }
 
     @Override
-    public void createIngressTcp(MiddlewareClusterDTO cluster, String namespace, List<ServiceDTO> serviceList,
-        boolean checkPort) {
+    public void createIngressTcp(MiddlewareClusterDTO cluster, String namespace, List<ServiceDTO> serviceList, 
+                                 boolean checkPort) {
         if (CollectionUtils.isEmpty(serviceList)) {
             return;
         }
@@ -292,8 +291,7 @@ public class IngressServiceImpl implements IngressService {
     }
 
     @Override
-    public IngressDTO get(String clusterId, String namespace, String type, String middlewareName, String name,
-        String exposeType, String protocol) {
+    public IngressDTO get(String clusterId, String namespace, String type, String middlewareName, String name, String exposeType, String protocol) {
         if (StringUtils.equals(exposeType, MIDDLEWARE_EXPOSE_INGRESS)) {
             if (StringUtils.equals(protocol, Protocol.HTTP.getValue())) {
                 Ingress ingress = ingressWrapper.get(clusterId, namespace, name);
@@ -346,8 +344,7 @@ public class IngressServiceImpl implements IngressService {
         return resList;
     }
 
-    private List<io.fabric8.kubernetes.api.model.Service> covertNodePortService(String clusterId, String namespace,
-        String middlewareName, IngressDTO ingressDTO) {
+    private List<io.fabric8.kubernetes.api.model.Service> covertNodePortService(String clusterId, String namespace, String middlewareName, IngressDTO ingressDTO) {
         List<ServiceDTO> serviceDTOList = ingressDTO.getServiceList();
         if (CollectionUtils.isEmpty(serviceDTOList)) {
             return null;
@@ -359,6 +356,7 @@ public class IngressServiceImpl implements IngressService {
                 continue;
             }
 
+
             io.fabric8.kubernetes.api.model.Service serviceR = map.get(serviceName);
             if (serviceR != null) {
                 if (covertServicePort(serviceDTO) != null) {
@@ -369,8 +367,7 @@ public class IngressServiceImpl implements IngressService {
                 continue;
             }
 
-            io.fabric8.kubernetes.api.model.Service serviceOriginal = serviceWrapper.get(clusterId, namespace,
-                serviceName);
+            io.fabric8.kubernetes.api.model.Service serviceOriginal = serviceWrapper.get(clusterId, namespace, serviceName);
             ServiceSpec serviceSpecOriginal = serviceOriginal.getSpec();
             if (serviceSpecOriginal == null) {
                 continue;
@@ -387,6 +384,7 @@ public class IngressServiceImpl implements IngressService {
             service.setMetadata(objectMeta);
 
             ServiceSpec spec = new ServiceSpec();
+
 
             List<ServicePort> servicePortList = new ArrayList<>(10);
             if (covertServicePort(serviceDTO) == null) {
@@ -432,8 +430,7 @@ public class IngressServiceImpl implements IngressService {
         return servicePort;
     }
 
-    private void dealNodePortRoutineList(String clusterId, String namespace,
-        List<io.fabric8.kubernetes.api.model.Service> serviceList, List<IngressDTO> ingressDtoList) {
+    private void dealNodePortRoutineList(String clusterId, String namespace, List<io.fabric8.kubernetes.api.model.Service> serviceList, List<IngressDTO> ingressDtoList) {
         if (CollectionUtils.isEmpty(serviceList)) {
             return;
         }
@@ -449,8 +446,7 @@ public class IngressServiceImpl implements IngressService {
         }
     }
 
-    private IngressDTO dealNodePortRoutine(String clusterId, String namespace, String exposeIP,
-        io.fabric8.kubernetes.api.model.Service service) {
+    private IngressDTO dealNodePortRoutine(String clusterId, String namespace, String exposeIP, io.fabric8.kubernetes.api.model.Service service) {
         if (service == null) {
             return null;
         }
@@ -516,7 +512,7 @@ public class IngressServiceImpl implements IngressService {
     }
 
     private IngressDTO getTcpRoutineDetail(String clusterId, String namespace, MiddlewareCRD crd,
-        String svcName, Map<String, List<ServiceDTO>> tcpRoutineMap) {
+                                           String svcName, Map<String, List<ServiceDTO>> tcpRoutineMap) {
         String nsSvcName = namespace + "/" + svcName;
         List<ServiceDTO> svcDtoList = tcpRoutineMap.get(nsSvcName);
         // 没有匹配的
@@ -526,15 +522,15 @@ public class IngressServiceImpl implements IngressService {
 
         MiddlewareClusterDTO middlewareClusterDTO = clusterService.findById(clusterId);
         return new IngressDTO()
-            .setMiddlewareName(crd.getMetadata().getName())
-            .setClusterId(clusterId)
-            .setClusterNickname(middlewareClusterDTO.getNickname())
-            .setName(getIngressTcpName(svcDtoList.get(0).getServiceName(), namespace))
-            .setNamespace(namespace)
-            .setExposeIP(middlewareClusterDTO.getIngress().getAddress())
-            .setExposeType(MIDDLEWARE_EXPOSE_INGRESS)
-            .setProtocol(Protocol.TCP.getValue())
-            .setServiceList(svcDtoList);
+                .setMiddlewareName(crd.getMetadata().getName())
+                .setClusterId(clusterId)
+                .setClusterNickname(middlewareClusterDTO.getNickname())
+                .setName(getIngressTcpName(svcDtoList.get(0).getServiceName(), namespace))
+                .setNamespace(namespace)
+                .setExposeIP(middlewareClusterDTO.getIngress().getAddress())
+                .setExposeType(MIDDLEWARE_EXPOSE_INGRESS)
+                .setProtocol(Protocol.TCP.getValue())
+                .setServiceList(svcDtoList);
     }
 
     /**
@@ -613,8 +609,7 @@ public class IngressServiceImpl implements IngressService {
      * @param configMap
      * @param ingressDtoList
      */
-    private void dealTcpRoutine(String clusterId, String namespace, ConfigMap configMap,
-        List<IngressDTO> ingressDtoList) {
+    private void dealTcpRoutine(String clusterId, String namespace, ConfigMap configMap, List<IngressDTO> ingressDtoList) {
         if (configMap == null) {
             return;
         }
@@ -687,7 +682,7 @@ public class IngressServiceImpl implements IngressService {
             ingressDTO.setName(getIngressTcpName(serviceNames[1], serviceNames[0]));
             ingressDTO.setExposeIP(middlewareCluster.getIngress().getAddress());
             ingressDTO.setExposeType(MIDDLEWARE_EXPOSE_INGRESS);
-            Map<String, String> stringStringMap = mapHashMap.get(serviceNames[1]);
+            Map<String,String> stringStringMap = mapHashMap.get(serviceNames[1]);
             if (stringStringMap != null) {
                 ingressDTO.setMiddlewareType(stringStringMap.get("type"));
                 ingressDTO.setMiddlewareName(stringStringMap.get("name"));
@@ -700,6 +695,7 @@ public class IngressServiceImpl implements IngressService {
             ingressDtoList.add(map.get(key));
         }
     }
+
 
     /**
      * IngressDTO convert to Ingress（k8s）
@@ -725,7 +721,7 @@ public class IngressServiceImpl implements IngressService {
         Map<String, String> annotations = new HashMap<>(1);
         String ingressClassName = clusterService.findById(clusterId).getIngress().getIngressClassName();
         annotations.put("kubernetes.io/ingress.class",
-            StringUtils.isBlank(ingressClassName) ? defaultIngressName : ingressClassName);
+                StringUtils.isBlank(ingressClassName )? defaultIngressName : ingressClassName);
         metadata.setAnnotations(annotations);
         ingress.setMetadata(metadata);
 
@@ -779,7 +775,7 @@ public class IngressServiceImpl implements IngressService {
 
         return ingress;
     }
-
+    
     private String getBaseIngressName(String middlewareName, String middlewareType, String protocol) {
         return middlewareName + "-" + middlewareType + "-" + protocol;
     }
@@ -797,12 +793,11 @@ public class IngressServiceImpl implements IngressService {
     private String getIngressTcpNamespace(MiddlewareClusterDTO cluster) {
         return cluster.getIngress().getTcp() == null
             || StringUtils.isBlank(cluster.getIngress().getTcp().getNamespace()) ? KUBE_SYSTEM
-            : cluster.getIngress().getTcp().getNamespace();
+                : cluster.getIngress().getTcp().getNamespace();
     }
 
     /**
      * Ingress（k8s）convert to IngressDTO
-     *
      * @param ingress
      * @return
      */
@@ -860,7 +855,7 @@ public class IngressServiceImpl implements IngressService {
     }
 
     private Map<String, Middleware> getMiddlewareMap(String clusterId, String namespace) {
-        List<Middleware> middlewareList = middlewareService.simpleList(clusterId, namespace, null, null);
+        List<Middleware> middlewareList = middlewareService.simpleList(clusterId, namespace, null,null);
         if (CollectionUtils.isEmpty(middlewareList)) {
             return null;
         }

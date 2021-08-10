@@ -12,7 +12,6 @@ public interface ServiceService {
 
     /**
      * 查询服务和端口列表
-     *
      * @param clusterId
      * @param namespace
      * @param name

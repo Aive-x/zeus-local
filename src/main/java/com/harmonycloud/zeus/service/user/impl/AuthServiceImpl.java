@@ -1,4 +1,4 @@
-package com.harmonycloud.zeus.service.auth.impl;
+package com.harmonycloud.zeus.service.user.impl;
 
 import static com.harmonycloud.caas.filters.base.GlobalKey.SET_TOKEN;
 import static com.harmonycloud.caas.filters.base.GlobalKey.USER_TOKEN;
@@ -8,18 +8,20 @@ import java.util.Date;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.harmonycloud.zeus.service.user.AuthService;
+import com.harmonycloud.zeus.service.user.UserService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.alibaba.fastjson.JSONObject;
-
-import com.harmonycloud.caas.common.enums.DictEnum;
 import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.exception.BusinessException;
+import com.harmonycloud.caas.common.model.user.UserDto;
 import com.harmonycloud.caas.filters.token.JwtTokenComponent;
-import com.harmonycloud.zeus.service.auth.AuthService;
 import com.harmonycloud.tool.encrypt.PasswordUtils;
+import com.harmonycloud.tool.encrypt.RSAUtils;
 
 /**
  * @author dengyulong
@@ -28,32 +30,34 @@ import com.harmonycloud.tool.encrypt.PasswordUtils;
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    @Value("${system.user.username:admin}")
-    private String defaultUsername;
-    @Value("${system.user.password:5B99164F828AED74140E5FDA077B634C}")
-    private String defaultPassword;
     @Value("${system.user.expire:8}")
     private String time;
 
+    @Autowired
+    private UserService userService;
+
     @Override
-    public JSONObject login(String username, String password, HttpServletResponse response) {
-        if (!username.equals(defaultUsername)) {
-            throw new BusinessException(DictEnum.USERNAME, username, ErrorMessage.NOT_EXIST);
+    public JSONObject login(String userName, String password, HttpServletResponse response) throws Exception {
+        //解密密码
+        String decryptPassword;
+        try {
+            decryptPassword = RSAUtils.decryptByPrivateKey(password);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorMessage.RSA_DECRYPT_FAILED);
         }
-        String encryptPassword = PasswordUtils.md5(password);
-        if (!encryptPassword.equals(defaultPassword)) {
+        //md5加密
+        String md5Password = PasswordUtils.md5(decryptPassword);
+        UserDto userDto = userService.get(userName, true);
+        if (!md5Password.equals(userDto.getPassword())) {
             throw new BusinessException(ErrorMessage.AUTH_FAILED);
         }
-        JSONObject admin = new JSONObject();
-        admin.put("username", defaultUsername);
-        admin.put("id", 1);
-        admin.put("roleId", 1);
+        JSONObject admin = convertUserInfo(userDto);
         long currentTime = System.currentTimeMillis();
         String token = JwtTokenComponent.generateToken("userInfo", admin,
             new Date(currentTime + Long.parseLong(time) * 3600000L), new Date(currentTime - 300000L));
         response.setHeader(SET_TOKEN, token);
         JSONObject res = new JSONObject();
-        res.put("username", defaultUsername);
+        res.put("userName", userName);
         res.put("token", token);
         return res;
     }
@@ -65,9 +69,20 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("token is null");
         }
         JSONObject json = JwtTokenComponent.getClaimsFromToken("userInfo", token);
-        String username = json.getString("username");
+        String userName = json.getString("username");
         response.setHeader(SET_TOKEN, "0");
-        return username;
+        return userName;
+    }
+
+    public JSONObject convertUserInfo(UserDto userDto){
+        JSONObject admin = new JSONObject();
+        admin.put("username", userDto.getUserName());
+        admin.put("roleId", userDto.getRoleId());
+        admin.put("aliasName", userDto.getAliasName());
+        admin.put("roleName", userDto.getRoleName());
+        admin.put("phone", userDto.getPhone());
+        admin.put("email", userDto.getEmail());
+        return admin;
     }
 
 }

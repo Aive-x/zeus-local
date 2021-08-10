@@ -21,8 +21,8 @@ public interface ClusterCertService {
 
     /**
      * 保存证书
-     *
      * @param cluster 集群信息
+     *
      */
     void saveCert(MiddlewareClusterDTO cluster);
 

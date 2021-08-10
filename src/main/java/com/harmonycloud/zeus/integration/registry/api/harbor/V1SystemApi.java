@@ -24,5 +24,5 @@ public class V1SystemApi extends AbstractApi {
         Object data = this.localVarHarborClient.execute(call, V1SystemInfo.class).getData();
         return (V1SystemInfo)data;
     }
-
+    
 }

@@ -33,35 +33,32 @@ public class NamespaceController {
 
     @Autowired
     private NamespaceService namespaceService;
-
+    
     @ApiOperation(value = "查询命名空间列表", notes = "查询命名空间列表")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "all", value = "是否查询所有命名空间，默认false", paramType = "query",
-            dataTypeClass = Boolean.class),
-        @ApiImplicitParam(name = "withQuota", value = "是否返回命名空间配额，默认false", paramType = "query",
-            dataTypeClass = Boolean.class),
-        @ApiImplicitParam(name = "withMiddleware", value = "是否返回中间件实例信息，默认false", paramType = "query",
-            dataTypeClass = Boolean.class),
-        @ApiImplicitParam(name = "keyword", value = "模糊搜索关键词", paramType = "query", dataTypeClass = String.class)
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "all", value = "是否查询所有命名空间，默认false", paramType = "query", dataTypeClass = Boolean.class),
+            @ApiImplicitParam(name = "withQuota", value = "是否返回命名空间配额，默认false", paramType = "query", dataTypeClass = Boolean.class),
+            @ApiImplicitParam(name = "withMiddleware", value = "是否返回中间件实例信息，默认false", paramType = "query", dataTypeClass = Boolean.class),
+            @ApiImplicitParam(name = "keyword", value = "模糊搜索关键词", paramType = "query", dataTypeClass = String.class)
     })
     @GetMapping
     public BaseResult<List<Namespace>> list(@PathVariable("clusterId") String clusterId,
-        @RequestParam(value = "all", defaultValue = "false") boolean all,
-        @RequestParam(value = "withQuota", defaultValue = "false") boolean withQuota,
-        @RequestParam(value = "withMiddleware", defaultValue = "false") boolean withMiddleware,
-        @RequestParam(value = "keyword", required = false) String keyword) {
+                                            @RequestParam(value = "all", defaultValue = "false") boolean all,
+                                            @RequestParam(value = "withQuota", defaultValue = "false") boolean withQuota,
+                                            @RequestParam(value = "withMiddleware", defaultValue = "false") boolean withMiddleware,
+                                            @RequestParam(value = "keyword", required = false) String keyword) {
         return BaseResult.ok(namespaceService.list(clusterId, all, withQuota, withMiddleware, keyword));
     }
 
     @ApiOperation(value = "注册命名空间", notes = "注册命名空间")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "namespaceList", value = "命名空间列表", paramType = "query", dataTypeClass = List.class)
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "namespaceList", value = "命名空间列表", paramType = "query", dataTypeClass = List.class)
     })
     @PutMapping
     public BaseResult registry(@PathVariable("clusterId") String clusterId,
-        @RequestBody List<String> namespaceList) {
+                               @RequestBody List<String> namespaceList) {
         String msg;
         List<String> failNsList = namespaceService.registry(clusterId, namespaceList);
         if (CollectionUtils.isEmpty(failNsList)) {
@@ -72,5 +69,5 @@ public class NamespaceController {
         }
         return BaseResult.ok(msg);
     }
-
+    
 }

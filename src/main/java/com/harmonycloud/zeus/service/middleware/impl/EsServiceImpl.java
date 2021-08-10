@@ -1,7 +1,6 @@
 package com.harmonycloud.zeus.service.middleware.impl;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.harmonycloud.caas.common.constants.CommonConstant;
 import com.harmonycloud.caas.common.constants.CoreConstant;
@@ -11,12 +10,11 @@ import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.exception.BusinessException;
 import com.harmonycloud.caas.common.model.middleware.*;
 import com.harmonycloud.zeus.service.k8s.ClusterService;
+import com.harmonycloud.zeus.util.EsTemplateEnum;
 import com.harmonycloud.tool.api.client.ElasticSearchClient;
 import com.harmonycloud.tool.date.DateUtils;
 import com.harmonycloud.tool.json.JsonUtil;
 import com.harmonycloud.tool.page.PageObject;
-import com.harmonycloud.zeus.service.middleware.AbstractMiddlewareService;
-import com.harmonycloud.zeus.service.middleware.EsService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.util.EntityUtils;
@@ -32,6 +30,7 @@ import org.elasticsearch.client.*;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -44,6 +43,9 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import com.harmonycloud.zeus.service.middleware.AbstractMiddlewareService;
+import com.harmonycloud.zeus.service.middleware.EsService;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -114,15 +116,13 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
         }
         DeleteIndexRequest deleteIndexRequest = new DeleteIndexRequest(indexName);
         deleteIndexRequest.indicesOptions(IndicesOptions.LENIENT_EXPAND_OPEN);
-        AcknowledgedResponse response = this.getEsClient(cluster).indices().delete(deleteIndexRequest,
-            RequestOptions.DEFAULT);
+        AcknowledgedResponse response = this.getEsClient(cluster).indices().delete(deleteIndexRequest, RequestOptions.DEFAULT);
         return response.isAcknowledged();
 
     }
 
     private RestHighLevelClient createEsClient(MiddlewareClusterDTO cluster) {
-        MiddlewareClusterLoggingInfo elasticSearch = Optional.ofNullable(cluster).map(MiddlewareClusterDTO::getLogging)
-            .map(MiddlewareClusterLogging::getElasticSearch).orElse(null);
+        MiddlewareClusterLoggingInfo elasticSearch = Optional.ofNullable(cluster).map(MiddlewareClusterDTO::getLogging).map(MiddlewareClusterLogging::getElasticSearch).orElse(null);
         if (elasticSearch == null || StringUtils.isEmpty(elasticSearch.getHost())) {
             throw new BusinessException(ErrorMessage.CLUSTER_ES_SERVICE_ERROR);
         }
@@ -136,7 +136,7 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
         }
         try {
             RestHighLevelClient highLevelClient =
-                ElasticSearchClient.getHighLevelClient(esHost, userName, password, port);
+                    ElasticSearchClient.getHighLevelClient(esHost, userName, password, port);
             return highLevelClient;
         } catch (Exception e) {
             log.error("创建ElasticSearch Client 失败,cluster:{}", JSONObject.toJSONString(cluster), e);
@@ -145,8 +145,7 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
     }
 
     @Override
-    public PageObject<MysqlSlowSqlDTO> getSlowSql(MiddlewareClusterDTO cluster, SlowLogQuery slowLogQuery)
-        throws Exception {
+    public PageObject<MysqlSlowSqlDTO> getSlowSql(MiddlewareClusterDTO cluster, SlowLogQuery slowLogQuery) throws Exception {
         if (cluster == null) {
             return new PageObject<>(new ArrayList<>(), CommonConstant.NUM_ZERO);
         }
@@ -157,13 +156,11 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
         }
         BoolQueryBuilder query = this.getSearchRequestBuilder(slowLogQuery);
         //根据时间范围判断落在哪几个索引
-        List<String> indexNameList = getExistIndexNames(esClient, cluster, slowLogQuery.getStartTime(),
-            slowLogQuery.getEndTime());
+        List<String> indexNameList = getExistIndexNames(esClient, cluster, slowLogQuery.getStartTime(), slowLogQuery.getEndTime());
         if (CollectionUtils.isEmpty(indexNameList)) {
             return new PageObject<>(new ArrayList<>(), CommonConstant.NUM_ZERO);
         }
-        PageObject<MysqlSlowSqlDTO> mysqlSlowSqlDTOPageObject = searchFromIndex(esClient, query,
-            slowLogQuery.getCurrent(), slowLogQuery.getSize(), indexNameList);
+        PageObject<MysqlSlowSqlDTO> mysqlSlowSqlDTOPageObject = searchFromIndex(esClient, query, slowLogQuery.getCurrent(), slowLogQuery.getSize(), indexNameList);
         return mysqlSlowSqlDTOPageObject;
     }
 
@@ -215,8 +212,7 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
             return "";
         }
         try {
-            return Base64.getEncoder().encodeToString(
-                (elasticSearch.getUser() + ":" + elasticSearch.getPassword()).getBytes("UTF-8"));
+            return Base64.getEncoder().encodeToString((elasticSearch.getUser() + ":" + elasticSearch.getPassword()).getBytes("UTF-8"));
         } catch (UnsupportedEncodingException e) {
             log.error("获取es authorization 失败", e);
             return "";
@@ -243,8 +239,7 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
         return query;
     }
 
-    private List<String> getExistIndexNames(RestHighLevelClient esClient, MiddlewareClusterDTO cluster,
-        String startTime, String endTime) throws Exception {
+    private List<String> getExistIndexNames(RestHighLevelClient esClient, MiddlewareClusterDTO cluster, String startTime, String endTime) throws Exception {
         List<String> indexNameList = new ArrayList<>();
         if (StringUtils.isNotBlank(startTime) && StringUtils.isNotBlank(endTime)) {
             Date startDate = DateUtils.parseUTCDate(startTime);
@@ -257,12 +252,12 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
             //dayc1在dayc2之前就循环
             while (dayc1.compareTo(dayc2) <= 0) {
                 String s = (dayc1.get(Calendar.YEAR) + "年" +
-                    (dayc1.get(Calendar.MONTH) + 1) + "月" + dayc1.get(Calendar.DATE)) + "日";
+                        (dayc1.get(Calendar.MONTH) + 1) + "月" + dayc1.get(Calendar.DATE)) + "日";
                 indexNameList.add(
-                    CoreConstant.ES_INDEX_MYSQL_SLOW_LOG + CommonConstant.LINE +
-                        dayc1.get(Calendar.YEAR) + CommonConstant.DOT +
-                        String.format("%02d", (dayc1.get(Calendar.MONTH) + 1)) + CommonConstant.DOT +
-                        String.format("%02d", dayc1.get(Calendar.DATE))
+                        CoreConstant.ES_INDEX_MYSQL_SLOW_LOG + CommonConstant.LINE +
+                                dayc1.get(Calendar.YEAR) + CommonConstant.DOT +
+                                String.format("%02d", (dayc1.get(Calendar.MONTH) + 1)) + CommonConstant.DOT +
+                                String.format("%02d", dayc1.get(Calendar.DATE))
                 );
 
                 dayc1.add(Calendar.DAY_OF_YEAR, CommonConstant.NUM_ONE); //加1天
@@ -290,14 +285,12 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
     }
 
     @Override
-    public String resultByGetRestClient(RestHighLevelClient client, MiddlewareClusterDTO cluster, String endPoint)
-        throws Exception {
+    public String resultByGetRestClient(RestHighLevelClient client, MiddlewareClusterDTO cluster, String endPoint) throws Exception {
         if (cluster == null) {
             return null;
         }
         Request request = new Request("GET", endPoint);
-        MiddlewareClusterLoggingInfo elasticSearch = Optional.ofNullable(cluster).map(MiddlewareClusterDTO::getLogging)
-            .map(MiddlewareClusterLogging::getElasticSearch).orElse(null);
+        MiddlewareClusterLoggingInfo elasticSearch = Optional.ofNullable(cluster).map(MiddlewareClusterDTO::getLogging).map(MiddlewareClusterLogging::getElasticSearch).orElse(null);
         if (elasticSearch == null || StringUtils.isEmpty(elasticSearch.getHost())) {
             throw new BusinessException(ErrorMessage.CLUSTER_ES_SERVICE_ERROR);
         }
@@ -307,7 +300,7 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
             RequestOptions.Builder builder = RequestOptions.DEFAULT.toBuilder();
             builder.addHeader("Authorization", "Basic " + getAuthorization(cluster)); // (1)
             builder.setHttpAsyncResponseConsumerFactory(           // (2)
-                new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(30 * 1024 * 1024));
+                    new HttpAsyncResponseConsumerFactory.HeapBufferedResponseConsumerFactory(30 * 1024 * 1024));
             // 调用build()方法创建对象
             RequestOptions build = builder.build();
             request.setOptions(build);
@@ -320,13 +313,12 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
         return EntityUtils.toString(response.getEntity());
     }
 
-    private PageObject<MysqlSlowSqlDTO> searchFromIndex(RestHighLevelClient esClient, BoolQueryBuilder query,
-        Integer current, Integer size, List<String> indexNameList) throws IOException {
+
+    private PageObject<MysqlSlowSqlDTO> searchFromIndex(RestHighLevelClient esClient, BoolQueryBuilder query, Integer current, Integer size, List<String> indexNameList) throws IOException {
         SortBuilder sortBuilder = SortBuilders.fieldSort("@timestamp")
-            .order(SortOrder.DESC).unmappedType("integer");
+                .order(SortOrder.DESC).unmappedType("integer");
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(query).sort(sortBuilder).from((current - CommonConstant.NUM_ONE) * size).size(size)
-            .explain(true);
+        searchSourceBuilder.query(query).sort(sortBuilder).from((current - CommonConstant.NUM_ONE) * size).size(size).explain(true);
         SearchRequest request = multiIndexSearch(searchSourceBuilder, indexNameList);
         request.types(CoreConstant.ES_TYPE_MYSQL_SLOW_LOG).source(searchSourceBuilder);
         SearchResponse response;
@@ -372,13 +364,12 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
      * @param index
      */
     @Override
-    public void updateIndexMaxResultWindow(RestHighLevelClient client, String[] index, int maxResultWindow)
-        throws IOException {
+    public void updateIndexMaxResultWindow(RestHighLevelClient client, String[] index, int maxResultWindow) throws IOException {
         UpdateSettingsRequest request = new UpdateSettingsRequest();
         request.indices(index);
 
         Settings settings = Settings.builder()
-            .put("index.max_result_window", maxResultWindow).build();
+                .put("index.max_result_window", maxResultWindow).build();
         request.settings(settings);
         client.indices().putSettings(request, RequestOptions.DEFAULT);
     }
@@ -419,27 +410,78 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
         for (MiddlewareClusterDTO cluster : clusters) {
             RestHighLevelClient esClient = getEsClient(cluster);
             try {
-                PutIndexTemplateRequest request = new PutIndexTemplateRequest("mysqlslowlog");
-                List<String> indexPatterns = new ArrayList<String>();
-                indexPatterns.add("mysqlslowlog-*");
-                request.patterns(indexPatterns);
-
-                request.order(2);
-
-                Map<String, Object> settings = new HashMap<>();
-                Map<String, String> indexMap = new HashMap<>();
-                indexMap.put("max_result_window", "300000");
-                settings.put("index", indexMap);
-                request.settings(settings);
-
-                esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
-                log.info("集群 {} 初始化索引模板成功", cluster.getName());
+                //初始化mysql慢日志模板
+                initMysqlSlowLogIndexTemplate(esClient);
+                //初始化操作审计模板
+                //initAuditIndexTemplete(esClient);
+                log.info("集群:{}索引模板初始化成功", cluster.getName());
             } catch (Exception e) {
                 e.printStackTrace();
-                log.info("集群 {} 初始化索引模板失败", cluster.getName(), e);
+                log.error("集群:{}索引模板初始化失败", cluster.getName(), e);
             }
 
         }
+    }
+
+    /**
+     * 初始化mysql慢日志索引模板
+     * @author liyinlong
+     * @date 2021/7/20 3:56 下午
+     * @param esClient
+     */
+    @Override
+    public void initMysqlSlowLogIndexTemplate(RestHighLevelClient esClient){
+        try {
+            PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.MYSQL_SLOW_LOG.getName());
+            JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.MYSQL_SLOW_LOG.getCode());
+            setCommonTemplete(request, codeJson);
+            esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
+            log.info("mysql慢日志索引模板初始化成功");
+        } catch (IOException e) {
+            log.error("mysql慢日志索引模板初始化失败", e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 初始化操作审计索引模板
+     * @author liyinlong
+     * @date 2021/7/21 9:30 上午
+     * @param esClient
+     */
+    public void initAuditIndexTemplete(RestHighLevelClient esClient){
+        try {
+            PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.AUDIT.getName());
+
+            String s = EsTemplateEnum.AUDIT.getCode();
+            JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.AUDIT.getCode());
+            setCommonTemplete(request, codeJson);
+            JSONObject mappings = codeJson.getJSONObject("mappings").getJSONObject("user_op_audit");
+            request.mapping(mappings.toString(), XContentType.JSON);
+
+            esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
+            log.info("操作审计索引模板初始化成功");
+        } catch (IOException e) {
+            log.error("操作审计索引模板初始化失败", e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 设置索引模板通用属性
+     * @author liyinlong
+     * @date 2021/7/21 9:31 上午
+     * @param request
+     * @param codeJson
+     */
+    public void setCommonTemplete(PutIndexTemplateRequest request, JSONObject codeJson){
+        request.settings(codeJson.getJSONObject("settings").toString(), XContentType.JSON);
+        ArrayList<String> list = new ArrayList<>();
+        for (Object pattern : codeJson.getJSONArray("index_patterns")) {
+            list.add(pattern.toString());
+        }
+        request.patterns(list);
+        request.order(codeJson.getIntValue("order"));
     }
 
 }

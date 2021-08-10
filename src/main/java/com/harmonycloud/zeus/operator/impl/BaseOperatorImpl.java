@@ -3,7 +3,6 @@ package com.harmonycloud.zeus.operator.impl;
 import com.harmonycloud.caas.common.enums.middleware.MiddlewareTypeEnum;
 import com.harmonycloud.caas.common.model.middleware.CustomConfig;
 import com.harmonycloud.caas.common.model.middleware.Middleware;
-import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
 import com.harmonycloud.zeus.annotation.Operator;
 import com.harmonycloud.zeus.operator.AbstractBaseOperator;
 import com.harmonycloud.zeus.operator.BaseOperator;
@@ -23,6 +22,7 @@ public class BaseOperatorImpl extends AbstractBaseOperator implements BaseOperat
     public boolean support(Middleware middleware) {
         return MiddlewareTypeEnum.BASE == MiddlewareTypeEnum.findByType(middleware.getType());
     }
+
 
     @Override
     public List<String> getConfigmapDataList(ConfigMap configMap) {

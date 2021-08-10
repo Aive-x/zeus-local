@@ -5,10 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.harmonycloud.zeus.integration.cluster.BackupWrapper;
-import com.harmonycloud.zeus.integration.cluster.bean.BackupCRD;
 import com.harmonycloud.zeus.integration.cluster.bean.BackupStorageProvider;
-import com.harmonycloud.zeus.service.middleware.BackupService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,6 +16,9 @@ import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.exception.CaasRuntimeException;
 import com.harmonycloud.caas.common.model.middleware.Backup;
 import com.harmonycloud.caas.common.model.middleware.Middleware;
+import com.harmonycloud.zeus.integration.cluster.BackupWrapper;
+import com.harmonycloud.zeus.integration.cluster.bean.BackupCRD;
+import com.harmonycloud.zeus.service.middleware.BackupService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -93,7 +93,7 @@ public class BackupServiceImpl implements BackupService {
     public void delete(String clusterId, String namespace, String name) throws Exception {
         try {
             backupWrapper.delete(clusterId, namespace, name);
-        } catch (Exception e) {
+        } catch (Exception e){
             log.error("删除备份失败", e);
             throw new CaasRuntimeException(ErrorMessage.DELETE_BACKUP_FAILED);
         }

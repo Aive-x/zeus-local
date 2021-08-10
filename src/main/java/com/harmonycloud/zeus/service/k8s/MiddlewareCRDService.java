@@ -79,6 +79,7 @@ public interface MiddlewareCRDService {
      */
     Middleware simpleConvert(MiddlewareCRD mw);
 
+
     /**
      * 获取cr名称
      *

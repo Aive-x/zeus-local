@@ -8,7 +8,6 @@ import com.harmonycloud.tool.page.PageObject;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.util.List;
 
 /**
@@ -54,8 +53,7 @@ public interface MiddlewareService {
 
     /**
      * 删除中间件
-     *
-     * @param clusterId 集群id
+     *  @param clusterId 集群id
      * @param namespace 命名空间
      * @param name      中间件名称
      * @param type
@@ -64,7 +62,6 @@ public interface MiddlewareService {
 
     /**
      * 中间件手动切换
-     *
      * @param clusterId 集群id
      * @param namespace 命名空间
      * @param name      中间件名称
@@ -75,10 +72,9 @@ public interface MiddlewareService {
 
     /**
      * 性能监控
-     *
-     * @param clusterId    集群id
-     * @param namespace    命名空间
-     * @param name         中间件名称
+     *  @param clusterId 集群id
+     * @param namespace 命名空间
+     * @param name      中间件名称
      * @param type
      * @param chartVersion chart包版本
      * @return string
@@ -89,6 +85,5 @@ public interface MiddlewareService {
 
     PageObject<MysqlSlowSqlDTO> slowsql(SlowLogQuery slowLogQuery) throws Exception;
 
-    void slowsqlExcel(SlowLogQuery slowLogQuery, HttpServletResponse response, HttpServletRequest request)
-        throws Exception;
+    void slowsqlExcel(SlowLogQuery slowLogQuery, HttpServletResponse response, HttpServletRequest request) throws Exception;
 }

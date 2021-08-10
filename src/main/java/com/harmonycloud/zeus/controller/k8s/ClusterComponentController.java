@@ -34,13 +34,13 @@ public class ClusterComponentController {
 
     @ApiOperation(value = "部署集群组件", notes = "部署集群组件")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "componentName", value = "集群组件名称", paramType = "path", dataTypeClass = String.class)
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "componentName", value = "集群组件名称", paramType = "path", dataTypeClass = String.class)
     })
     @PostMapping("/{componentName}")
     public BaseResult deploy(@PathVariable("clusterId") String clusterId,
-        @PathVariable("componentName") String componentName,
-        @RequestBody MiddlewareClusterDTO cluster) {
+                             @PathVariable("componentName") String componentName,
+                             @RequestBody MiddlewareClusterDTO cluster) {
         if (cluster == null) {
             throw new IllegalArgumentException("cluster info is null");
         }
@@ -55,15 +55,14 @@ public class ClusterComponentController {
 
     @ApiOperation(value = "对接集群组件", notes = "对接集群组件")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "componentName", value = "集群组件名称", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "cluster", value = "集群信息", paramType = "query",
-            dataTypeClass = MiddlewareClusterDTO.class)
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "componentName", value = "集群组件名称", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "cluster", value = "集群信息", paramType = "query", dataTypeClass = MiddlewareClusterDTO.class)
     })
     @PutMapping("/{componentName}")
     public BaseResult integrate(@PathVariable("clusterId") String clusterId,
-        @PathVariable("componentName") String componentName,
-        @RequestBody MiddlewareClusterDTO cluster) {
+                                @PathVariable("componentName") String componentName,
+                                @RequestBody MiddlewareClusterDTO cluster) {
         cluster.setId(clusterId);
         clusterComponentService.integrate(cluster, componentName);
         return BaseResult.ok();

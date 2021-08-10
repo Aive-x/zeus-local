@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.harmonycloud.zeus.service.k8s.ClusterService;
 import com.harmonycloud.zeus.service.log.TerminalService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,6 @@ import org.springframework.web.socket.WebSocketSession;
 import com.harmonycloud.caas.common.constants.DateStyle;
 import com.harmonycloud.caas.common.constants.NameConstant;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
-import com.harmonycloud.zeus.service.k8s.ClusterService;
 import com.harmonycloud.tool.cmd.CmdExecUtil;
 import com.harmonycloud.tool.date.DateUtils;
 
@@ -76,11 +76,11 @@ public class TerminalServiceImpl implements TerminalService {
     /**
      * 删除控制台线程
      *
+     * @Author liusenze
+     * @Date 2020/6/19 11:22 上午
      * @param cmd
      * @param limitHour
      * @return void
-     * @Author liusenze
-     * @Date 2020/6/19 11:22 上午
      */
     private void deleteConsoleProcesses(String cmd, Integer limitHour) {
         List<String> processList = null;

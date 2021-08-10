@@ -2,8 +2,6 @@ package com.harmonycloud.zeus.service.k8s.impl;
 
 import com.harmonycloud.zeus.integration.cluster.StatefulSetWrapper;
 import com.harmonycloud.zeus.service.k8s.StatefulSetService;
-import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

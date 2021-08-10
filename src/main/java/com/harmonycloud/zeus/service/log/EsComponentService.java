@@ -3,7 +3,9 @@ package com.harmonycloud.zeus.service.log;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
 import com.harmonycloud.caas.common.model.middleware.MysqlSlowSqlDTO;
 import com.harmonycloud.caas.common.model.middleware.SlowLogQuery;
+import com.harmonycloud.zeus.bean.BeanOperationAudit;
 import com.harmonycloud.tool.page.PageObject;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 
@@ -62,7 +64,7 @@ public interface EsComponentService {
      */
     Boolean checkEsConnection(MiddlewareClusterDTO cluster);
 
-    String resultByGetRestClient(RestHighLevelClient client, MiddlewareClusterDTO cluster, String endPoint)
-        throws Exception;
+    String resultByGetRestClient(RestHighLevelClient client, MiddlewareClusterDTO cluster, String endPoint) throws Exception;
 
+    IndexResponse saveAuditRepository(BeanOperationAudit beanRequest, String clusterId);
 }

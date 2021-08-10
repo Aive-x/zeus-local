@@ -13,7 +13,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonInclude(value = JsonInclude.Include.NON_NULL)
+@JsonInclude(value=JsonInclude.Include.NON_NULL)
 public class PrometheusRule {
 
     private String apiVersion = "monitoring.coreos.com/v1";

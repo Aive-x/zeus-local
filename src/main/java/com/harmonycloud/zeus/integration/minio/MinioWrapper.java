@@ -23,8 +23,7 @@ public class MinioWrapper {
      * 构建链接
      */
     public static MinioClient build(Minio minio) {
-        return MinioClient.builder().endpoint(minio.getEndpoint()).credentials(minio.getAccessKeyId(),
-            minio.getSecretAccessKey()).build();
+        return MinioClient.builder().endpoint(minio.getEndpoint()).credentials(minio.getAccessKeyId(), minio.getSecretAccessKey()).build();
     }
 
     /**
@@ -38,7 +37,7 @@ public class MinioWrapper {
     /**
      * 删除object(备份)
      */
-    public void removeObject(Minio minio, String objectName) throws Exception {
+    public void removeObject(Minio minio, String objectName) throws Exception{
         if (StringUtils.isBlank(objectName)) {
             return;
         }
@@ -46,7 +45,7 @@ public class MinioWrapper {
             MinioClient minioClient = MinioWrapper.build(minio);
             // 从mybucket中删除myobject。
             RemoveObjectArgs objectArgs = RemoveObjectArgs.builder().object(objectName)
-                .bucket(minio.getBucketName()).build();
+                    .bucket(minio.getBucketName()).build();
             minioClient.removeObject(objectArgs);
         } catch (MinioException e) {
             throw new CaasRuntimeException(ErrorMessage.DELETE_BACKUP_FILE_FAILED);

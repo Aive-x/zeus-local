@@ -31,13 +31,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public BaseResult businessExceptionHandler(Throwable e) {
-        BusinessException exception = (BusinessException)e;
+        BusinessException exception = (BusinessException) e;
         return BaseResult.error(exception);
     }
 
     @ExceptionHandler(CaasRuntimeException.class)
     public BaseResult caasExceptionHandler(Throwable e) {
-        CaasRuntimeException exception = (CaasRuntimeException)e;
+        CaasRuntimeException exception = (CaasRuntimeException) e;
         // TODO 需要添加打印堆栈的调试模式配置
         if (exception.getCode() == ErrorMessage.UNKNOWN.getCode()) {
             return BaseResult.error(exception).setErrorStack(e.getStackTrace());

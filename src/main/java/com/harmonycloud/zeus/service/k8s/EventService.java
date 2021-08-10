@@ -31,6 +31,6 @@ public interface EventService {
      * @return
      */
     List<EventDetail> getEvents(String clusterId, String namespace, String middlewareName, String middlewareType,
-        String eventType, String kind);
+                                String eventType, String kind);
 
 }

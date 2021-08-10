@@ -8,4 +8,6 @@ import com.harmonycloud.zeus.service.AbstractBaseService;
  */
 public abstract class AbstractRegistryService extends AbstractBaseService {
 
+
+
 }

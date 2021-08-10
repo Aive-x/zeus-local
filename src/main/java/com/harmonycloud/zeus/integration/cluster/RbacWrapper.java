@@ -14,11 +14,11 @@ public class RbacWrapper {
     public ClusterRoleBinding get(String clusterId, String name) {
         return K8sClient.getClient(clusterId).rbac().clusterRoleBindings().withName(name).get();
     }
-
+    
     public ClusterRoleBinding create(String clusterId, ClusterRoleBinding clusterRoleBinding) {
         return K8sClient.getClient(clusterId).rbac().clusterRoleBindings().create(clusterRoleBinding);
     }
-
+    
     public ClusterRoleBinding update(String clusterId, ClusterRoleBinding clusterRoleBinding) {
         return K8sClient.getClient(clusterId).rbac().clusterRoleBindings().createOrReplace(clusterRoleBinding);
     }

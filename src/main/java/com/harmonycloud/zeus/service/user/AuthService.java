@@ -1,4 +1,4 @@
-package com.harmonycloud.zeus.service.auth;
+package com.harmonycloud.zeus.service.user;
 
 import com.alibaba.fastjson.JSONObject;
 
@@ -14,12 +14,12 @@ public interface AuthService {
     /**
      * 登录
      *
-     * @param username 用户名
+     * @param userName 用户名
      * @param password 密码
      * @param response 响应
      * @return
      */
-    JSONObject login(String username, String password, HttpServletResponse response);
+    JSONObject login(String userName, String password, HttpServletResponse response) throws Exception;
 
     /**
      * 登出

@@ -21,8 +21,7 @@ import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 public class MybatisPlusGenerator {
     public static void main(String[] args) {
         Properties properties = new Properties();
-        InputStream in = MybatisPlusGenerator.class.getClassLoader().getResourceAsStream(
-            "sql.code.generator.properties");
+        InputStream in = MybatisPlusGenerator.class.getClassLoader().getResourceAsStream("sql.code.generator.properties");
         try {
             properties.load(in);
         } catch (IOException e) {
@@ -39,8 +38,7 @@ public class MybatisPlusGenerator {
         gc.setOutputDir(projectPath + "/src/main/java");
         gc.setAuthor(properties.getProperty("global.author"));
         gc.setOpen(Boolean.parseBoolean(properties.getProperty("global.output.open"))); // 是否打开输出目录,默认true
-        gc.setEnableCache(
-            Boolean.parseBoolean(properties.getProperty("global.cache.enable"))); // 是否在xml中添加二级缓存配置,默认false
+        gc.setEnableCache(Boolean.parseBoolean(properties.getProperty("global.cache.enable"))); // 是否在xml中添加二级缓存配置,默认false
         gc.setSwagger2(Boolean.parseBoolean(properties.getProperty("global.swagger.enable")));// 是否开启swagger2模式,默认false
         gc.setFileOverride(Boolean.parseBoolean(properties.getProperty("global.filed.override"))); // 是否覆盖已有文件
         gc.setEntityName("Bean%s");
@@ -96,7 +94,7 @@ public class MybatisPlusGenerator {
         strategy.setEntityLombokModel(true);
         strategy.setRestControllerStyle(false);
         // 当对某张表有所改动但只想重新生成这张表，可以这样设置
-        //         strategy.setInclude("middleware_info");
+//         strategy.setInclude("middleware_info");
         // 排除通用字段
         strategy.setSuperEntityColumns();
         strategy.setControllerMappingHyphenStyle(true);

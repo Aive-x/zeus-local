@@ -12,7 +12,6 @@ public interface ClusterService {
 
     /**
      * 获取所有集群
-     *
      * @return
      */
     List<MiddlewareClusterDTO> listClusters();

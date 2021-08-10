@@ -34,7 +34,7 @@ public interface MysqlOperator extends BaseOperator {
      *
      * @param middleware  中间件信息
      * @param keepBackups 备份数量
-     * @param cron        cron表达式
+     * @param cron cron表达式
      * @return
      */
     void createScheduleBackup(Middleware middleware, Integer keepBackups, String cron);
@@ -55,5 +55,6 @@ public interface MysqlOperator extends BaseOperator {
      * @param backupName     备份名称
      */
     void deleteBackup(Middleware middleware, String backupFileName, String backupName) throws Exception;
+
 
 }

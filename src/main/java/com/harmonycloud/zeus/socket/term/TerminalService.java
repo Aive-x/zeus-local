@@ -16,6 +16,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import com.harmonycloud.zeus.service.k8s.ClusterService;
 import com.harmonycloud.zeus.service.log.LogService;
+import com.harmonycloud.zeus.socket.term.helper.ThreadHelper;
+import com.harmonycloud.zeus.util.AssertUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,13 +29,10 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.harmonycloud.caas.common.enums.DictEnum;
 import com.harmonycloud.caas.common.model.middleware.LogQueryDto;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
-import com.harmonycloud.zeus.socket.term.helper.ThreadHelper;
-import com.harmonycloud.zeus.util.AssertUtil;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 
@@ -152,14 +151,12 @@ public class TerminalService {
             AssertUtil.notBlank(logQueryDto.getLogFile(), DictEnum.LOG_FILE);
             if (StringUtils.isBlank(logQueryDto.getContainer())) {
                 command = MessageFormat.format(
-                    "kubectl exec {0} -n {1} --server={2} --token={3} --insecure-skip-tls-verify=true -- tail -f -n " 
-                        + "{4} {5}/{6}",
+                    "kubectl exec {0} -n {1} --server={2} --token={3} --insecure-skip-tls-verify=true -- tail -f -n {4} {5}/{6}",
                     logQueryDto.getPod(), logQueryDto.getNamespace(), cluster.getAddress(), cluster.getAccessToken(),
                     DEFAULT_LOG_LINES, logQueryDto.getLogDir(), logQueryDto.getLogFile());
             } else {
                 command = MessageFormat.format(
-                    "kubectl exec {0} -c {1} -n {2} --server={3} --token={4} --insecure-skip-tls-verify=true -- tail " 
-                        + "-f -n {5} {6}/{7}",
+                    "kubectl exec {0} -c {1} -n {2} --server={3} --token={4} --insecure-skip-tls-verify=true -- tail -f -n {5} {6}/{7}",
                     logQueryDto.getPod(), logQueryDto.getContainer(), logQueryDto.getNamespace(), cluster.getAddress(),
                     cluster.getAccessToken(), DEFAULT_LOG_LINES, logQueryDto.getLogDir(), logQueryDto.getLogFile());
             }

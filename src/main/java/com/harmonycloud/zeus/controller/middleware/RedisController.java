@@ -1,10 +1,9 @@
 package com.harmonycloud.zeus.controller.middleware;
 
+import com.harmonycloud.zeus.service.middleware.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.harmonycloud.zeus.service.middleware.RedisService;
 
 import io.swagger.annotations.Api;
 
@@ -19,5 +18,6 @@ public class RedisController {
 
     @Autowired
     private RedisService redisService;
+
 
 }

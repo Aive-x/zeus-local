@@ -3,7 +3,8 @@ package com.harmonycloud.zeus.service.middleware.impl;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.harmonycloud.zeus.service.middleware.ConfigTemplateService;
+import com.harmonycloud.zeus.bean.BeanCustomConfigTemplate;
+import com.harmonycloud.zeus.dao.BeanCustomConfigTemplateMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +13,7 @@ import org.springframework.stereotype.Service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.harmonycloud.caas.common.model.middleware.CustomConfig;
 import com.harmonycloud.caas.common.model.middleware.CustomConfigTemplateDTO;
-import com.harmonycloud.zeus.bean.BeanCustomConfigTemplate;
-import com.harmonycloud.zeus.dao.BeanCustomConfigTemplateMapper;
+import com.harmonycloud.zeus.service.middleware.ConfigTemplateService;
 
 import lombok.extern.slf4j.Slf4j;
 

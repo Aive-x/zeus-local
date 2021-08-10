@@ -11,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.TypeReference;
-
 import com.harmonycloud.tool.api.AbstractApi;
 import com.harmonycloud.tool.api.client.BaseClient;
 import com.harmonycloud.tool.api.common.ApiException;
@@ -32,7 +31,7 @@ public class GrafanaApi extends AbstractApi {
 
     /**
      * 登录并返回cookie
-     *
+     * 
      * @param username 用户名
      * @param password 密码
      * @return
@@ -66,10 +65,8 @@ public class GrafanaApi extends AbstractApi {
         RequestParams requestParams = new RequestParams();
         requestParams.getHeader().put("Cookie", grafanaSession);
 
-        Call call = this.localVarHarborClient.buildCall("/api/auth/keys?includeExpired=false", GET, requestParams, null,
-            new String[] {});
-        ApiResponse<List<GrafanaApiKey>> response = this.localVarHarborClient.execute(call,
-            new TypeReference<List<GrafanaApiKey>>() {}.getType());
+        Call call = this.localVarHarborClient.buildCall("/api/auth/keys?includeExpired=false", GET, requestParams, null, new String[] {});
+        ApiResponse<List<GrafanaApiKey>> response = this.localVarHarborClient.execute(call, new TypeReference<List<GrafanaApiKey>>() {}.getType());
         return response.getData();
     }
 
@@ -84,7 +81,7 @@ public class GrafanaApi extends AbstractApi {
      * @throws ApiException
      */
     public String createApiKey(String name, String role, Long secondsToLive, String grafanaSession)
-        throws ApiException {
+            throws ApiException {
         // 请求头参数
         RequestParams requestParams = new RequestParams();
         requestParams.getHeader().put("Cookie", grafanaSession);
@@ -104,7 +101,6 @@ public class GrafanaApi extends AbstractApi {
 
     /**
      * 删除 API Key
-     *
      * @param id             id
      * @param grafanaSession 登录之后的session
      * @throws ApiException

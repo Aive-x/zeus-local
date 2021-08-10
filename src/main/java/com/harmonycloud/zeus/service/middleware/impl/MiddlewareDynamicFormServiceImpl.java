@@ -41,7 +41,7 @@ public class MiddlewareDynamicFormServiceImpl implements MiddlewareDynamicFormSe
         return helmChartService.getQuestionYaml(helmChartFile);
     }
 
-    public Map<String, List<Middleware>> detailCustomMiddleware(String clusterId, String namesapce) {
+    public Map<String, List<Middleware>> detailCustomMiddleware(String clusterId, String namesapce){
         //根据数据库获取自定义中间件  并过滤已有的四款中间件
         List<BeanMiddlewareInfo> mwInfoList = middlewareInfoService.list(clusterId);
         mwInfoList = mwInfoList.stream().filter(mw -> {
@@ -54,6 +54,7 @@ public class MiddlewareDynamicFormServiceImpl implements MiddlewareDynamicFormSe
         return null;
     }
 
+    
     public boolean filterBasicMiddleware(String tar) {
         return !"mysql-0.1.0".equals(tar) && !"redis-5.0.8".equals(tar) && !"rocketmq-4.1.0".equals(tar)
             && !"elasticsearch-6.8.10-1".equals(tar);

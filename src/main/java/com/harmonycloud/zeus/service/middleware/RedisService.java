@@ -6,4 +6,5 @@ package com.harmonycloud.zeus.service.middleware;
  */
 public interface RedisService {
 
+
 }

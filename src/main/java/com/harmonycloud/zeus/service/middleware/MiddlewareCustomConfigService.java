@@ -12,7 +12,7 @@ import com.harmonycloud.zeus.bean.BeanCustomConfig;
  * @author xutianhong
  * @Date 2021/4/23 4:32 下午
  */
-public interface MiddlewareCustomConfigService {
+public interface MiddlewareCustomConfigService  {
 
     /**
      * 获取自定义配置
@@ -20,11 +20,10 @@ public interface MiddlewareCustomConfigService {
      * @param clusterId      集群id
      * @param namespace      命名空间
      * @param middlewareName 中间件名称
-     * @param type           中间件类型
+     * @param type 中间件类型
      * @return List<CustomConfig>
      */
-    List<CustomConfig> listCustomConfig(String clusterId, String namespace, String middlewareName, String type)
-        throws Exception;
+    List<CustomConfig> listCustomConfig(String clusterId, String namespace, String middlewareName, String type) throws Exception;
 
     /**
      * 更新自定义配置
@@ -39,11 +38,11 @@ public interface MiddlewareCustomConfigService {
      * @param clusterId      集群id
      * @param namespace      命名空间
      * @param middlewareName 中间件名称
-     * @param type           中间件类型
+     * @param type 中间件类型
      * @return List<CustomConfigHistoryDTO>
      */
     List<CustomConfigHistoryDTO> getCustomConfigHistory(String clusterId, String namespace, String middlewareName,
-        String type, String item, String startTime, String endTime);
+                                                        String type, String item, String startTime, String endTime);
 
     /**
      * 上传helm包时，同步更新config
@@ -57,7 +56,7 @@ public interface MiddlewareCustomConfigService {
      * 上传helm包时，同步更新config
      *
      * @param helmChartFile helm包内容
-     * @param update        是否为更新
+     * @param update 是否为更新
      * @return List<BeanCustomConfig>
      */
     List<BeanCustomConfig> updateConfig2MySQL(HelmChartFile helmChartFile, Boolean update) throws Exception;
@@ -67,7 +66,7 @@ public interface MiddlewareCustomConfigService {
      *
      * @param clusterId 集群
      * @param namespace 分区
-     * @param name      名称
+     * @param name  名称
      */
     void deleteHistory(String clusterId, String namespace, String name);
 }

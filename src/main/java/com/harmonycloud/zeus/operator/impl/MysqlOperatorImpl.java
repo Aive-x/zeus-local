@@ -11,8 +11,19 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.harmonycloud.caas.common.model.middleware.*;
-import com.harmonycloud.zeus.annotation.Operator;
 import com.harmonycloud.zeus.integration.cluster.MysqlClusterWrapper;
+import com.harmonycloud.zeus.service.middleware.BackupService;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
+
+import com.alibaba.fastjson.JSONObject;
+import com.harmonycloud.caas.common.constants.NameConstant;
+import com.harmonycloud.caas.common.enums.DictEnum;
+import com.harmonycloud.caas.common.enums.ErrorMessage;
+import com.harmonycloud.caas.common.enums.middleware.MiddlewareTypeEnum;
+import com.harmonycloud.caas.common.exception.BusinessException;
+import com.harmonycloud.zeus.annotation.Operator;
 import com.harmonycloud.zeus.integration.cluster.bean.BackupCRD;
 import com.harmonycloud.zeus.integration.cluster.bean.BackupSpec;
 import com.harmonycloud.zeus.integration.cluster.bean.BackupStorageProvider;
@@ -21,23 +32,11 @@ import com.harmonycloud.zeus.integration.cluster.bean.Minio;
 import com.harmonycloud.zeus.integration.cluster.bean.MysqlCluster;
 import com.harmonycloud.zeus.integration.cluster.bean.ScheduleBackupCRD;
 import com.harmonycloud.zeus.integration.cluster.bean.ScheduleBackupSpec;
-import com.harmonycloud.zeus.integration.cluster.bean.Status.Condition;
+import com.harmonycloud.zeus.integration.cluster.bean.Status;
 import com.harmonycloud.zeus.integration.minio.MinioWrapper;
-import com.harmonycloud.zeus.operator.miiddleware.AbstractMysqlOperator;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.CollectionUtils;
-
-import com.alibaba.fastjson.JSONObject;
-
-import com.harmonycloud.caas.common.constants.NameConstant;
-import com.harmonycloud.caas.common.enums.DictEnum;
-import com.harmonycloud.caas.common.enums.ErrorMessage;
-import com.harmonycloud.caas.common.enums.middleware.MiddlewareTypeEnum;
-import com.harmonycloud.caas.common.exception.BusinessException;
 import com.harmonycloud.zeus.operator.api.MysqlOperator;
+import com.harmonycloud.zeus.operator.miiddleware.AbstractMysqlOperator;
 import com.harmonycloud.zeus.service.k8s.ClusterService;
-import com.harmonycloud.zeus.service.middleware.BackupService;
 import com.harmonycloud.zeus.service.middleware.ScheduleBackupService;
 import com.harmonycloud.tool.date.DateUtils;
 import com.harmonycloud.tool.encrypt.PasswordUtils;
@@ -67,6 +66,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
     @Autowired
     private ClusterService clusterService;
 
+
     @Override
     public boolean support(Middleware middleware) {
         return MiddlewareTypeEnum.MYSQL == MiddlewareTypeEnum.findByType(middleware.getType());
@@ -81,10 +81,11 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         replaceCommonStorages(quota, values);
 
         // mysql参数
-        JSONObject mysqlArgs = values.getJSONObject("mysqlArgs");
+        JSONObject mysqlArgs = values.getJSONObject("args");
         if (StringUtils.isBlank(middleware.getPassword())) {
             middleware.setPassword(PasswordUtils.generateCommonPassword(10));
         }
+        log.info("mysql特有参数：", mysqlArgs);
         mysqlArgs.put("root_password", middleware.getPassword());
         if (StringUtils.isNotBlank(middleware.getCharSet())) {
             mysqlArgs.put("character_set_server", middleware.getCharSet());
@@ -110,7 +111,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         if (values != null) {
             convertResourcesByHelmChart(middleware, middleware.getType(), values.getJSONObject(RESOURCES));
 
-            JSONObject mysqlArgs = values.getJSONObject("mysqlArgs");
+            JSONObject mysqlArgs = values.getJSONObject("args");
             middleware.setPassword(mysqlArgs.getString("root_password"));
             middleware.setCharSet(mysqlArgs.getString("character_set_server"));
             middleware.setPort(mysqlArgs.getIntValue("server_port"));
@@ -300,8 +301,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
 
     @Override
     public void switchMiddleware(Middleware middleware) {
-        MysqlCluster mysqlCluster = mysqlClusterWrapper.get(middleware.getClusterId(), middleware.getNamespace(),
-            middleware.getName());
+        MysqlCluster mysqlCluster = mysqlClusterWrapper.get(middleware.getClusterId(), middleware.getNamespace(), middleware.getName());
         if (mysqlCluster == null) {
             throw new BusinessException(DictEnum.MYSQL_CLUSTER, middleware.getName(), ErrorMessage.NOT_EXIST);
         }
@@ -347,11 +347,11 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
     }
 
     @Override
-    public void editConfigMapData(CustomConfig customConfig, List<String> data) {
+    public void editConfigMapData(CustomConfig customConfig, List<String> data){
         for (int i = 0; i < data.size(); ++i) {
             if (data.get(i).contains(customConfig.getName())) {
                 String temp = StringUtils.substring(data.get(i), data.get(i).indexOf("=") + 1, data.get(i).length());
-                if (data.get(i).replace(" ", "").replace(temp, "").replace("=", "").equals(customConfig.getName())) {
+                if (data.get(i).replace(" ", "").replace(temp, "").replace("=", "").equals(customConfig.getName())){
                     data.set(i, data.get(i).replace(temp, customConfig.getValue()));
                 }
             }
@@ -384,7 +384,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         }
         String masterName = null;
         String slaveName = null;
-        for (Condition cond : mysqlCluster.getStatus().getConditions()) {
+        for (Status.Condition cond : mysqlCluster.getStatus().getConditions()) {
             if ("master".equalsIgnoreCase(cond.getType())) {
                 masterName = cond.getName();
             } else if ("slave".equalsIgnoreCase(cond.getType())) {
@@ -466,8 +466,8 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 Date date = cal.getTime();
                 dateList.add(date);
             }
-            dateList.sort((d1, d2) -> {
-                if (d1.equals(d2)) {
+            dateList.sort((d1,d2) -> {
+                if (d1.equals(d2)){
                     return 0;
                 }
                 return d1.before(d2) ? -1 : 1;

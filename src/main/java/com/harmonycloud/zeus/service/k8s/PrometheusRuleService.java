@@ -21,7 +21,7 @@ public interface PrometheusRuleService {
     /**
      * 更新告警configmap
      *
-     * @param clusterId      集群id
+     * @param clusterId 集群id
      * @param prometheusRule cr
      */
     void update(String clusterId, PrometheusRule prometheusRule);

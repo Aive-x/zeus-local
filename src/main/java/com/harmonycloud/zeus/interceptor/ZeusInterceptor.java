@@ -18,8 +18,7 @@ import com.harmonycloud.caas.filters.enumm.LanguageEnum;
 public class ZeusInterceptor implements HandlerInterceptor {
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
-        throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 进入controller层之前的处理
         CurrentLanguage.setLanguage(LanguageEnum.getCurrentLanguage());
         return true;

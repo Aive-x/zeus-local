@@ -8,4 +8,6 @@ import com.harmonycloud.zeus.operator.BaseOperator;
  */
 public interface RedisOperator extends BaseOperator {
 
+
+
 }

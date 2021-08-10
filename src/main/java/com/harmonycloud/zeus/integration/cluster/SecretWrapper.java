@@ -23,9 +23,9 @@ public class SecretWrapper {
         }
         return list.getItems();
     }
-
+    
     public Secret get(String clusterId, String namespace, String name) {
         return K8sClient.getClient(clusterId).secrets().inNamespace(namespace).withName(name).get();
     }
-
+    
 }

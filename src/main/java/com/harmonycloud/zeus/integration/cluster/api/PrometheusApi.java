@@ -1,7 +1,6 @@
 package com.harmonycloud.zeus.integration.cluster.api;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.caas.common.model.PrometheusRulesResponse;
 import com.harmonycloud.caas.common.model.PrometheusResponse;
 import com.harmonycloud.tool.api.AbstractApi;
@@ -31,17 +30,16 @@ public class PrometheusApi extends AbstractApi {
             requestParams.getQuery().add(new Pair(k, v));
         });
         Call call = this.localVarHarborClient.buildCall(url, GET, requestParams, null, new String[] {});
-        return (PrometheusResponse)this.localVarHarborClient.execute(call, PrometheusResponse.class).getData();
+        return (PrometheusResponse) this.localVarHarborClient.execute(call, PrometheusResponse.class).getData();
     }
 
-    public PrometheusRulesResponse getRules() throws Exception {
+    public PrometheusRulesResponse getRules() throws Exception{
         RequestParams requestParams = new RequestParams();
         Call call = this.localVarHarborClient.buildCall("", GET, requestParams, null, new String[] {});
-        return (PrometheusRulesResponse)this.localVarHarborClient.execute(call, PrometheusRulesResponse.class)
-            .getData();
+        return (PrometheusRulesResponse) this.localVarHarborClient.execute(call, PrometheusRulesResponse.class).getData();
     }
 
-    public void setSilence(Map<String, Object> body) throws Exception {
+    public void setSilence(Map<String, Object> body) throws Exception{
         Call call = this.localVarHarborClient.buildCall("", POST, body, new String[] {});
         this.localVarHarborClient.execute(call, JSONObject.class);
     }

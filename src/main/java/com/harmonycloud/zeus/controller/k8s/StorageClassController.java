@@ -1,5 +1,6 @@
 package com.harmonycloud.zeus.controller.k8s;
 
+import com.harmonycloud.zeus.service.k8s.StorageClassService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -8,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.harmonycloud.caas.common.base.BaseResult;
-import com.harmonycloud.zeus.service.k8s.StorageClassService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -29,14 +29,13 @@ public class StorageClassController {
 
     @ApiOperation(value = "查询存储列表", notes = "查询存储列表")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "onlyMiddleware", value = "是否只返回中间件相关的存储", paramType = "query", defaultValue = "true",
-            dataTypeClass = Boolean.class),
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "onlyMiddleware", value = "是否只返回中间件相关的存储", paramType = "query", defaultValue = "true", dataTypeClass = Boolean.class),
     })
     @GetMapping
     public BaseResult list(@PathVariable("clusterId") String clusterId,
-        @RequestParam(value = "onlyMiddleware", defaultValue = "true") boolean onlyMiddleware,
-        @RequestParam(value = "namespace", required = false) String namespace) {
+                           @RequestParam(value = "onlyMiddleware", defaultValue = "true") boolean onlyMiddleware,
+                           @RequestParam(value = "namespace", required = false) String namespace) {
         return BaseResult.ok(storageClassService.list(clusterId, namespace, onlyMiddleware));
     }
 

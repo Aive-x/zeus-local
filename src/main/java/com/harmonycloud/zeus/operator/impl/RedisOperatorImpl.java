@@ -7,18 +7,18 @@ import static com.harmonycloud.caas.common.constants.NameConstant.RESOURCES;
 import static com.harmonycloud.caas.common.constants.NameConstant.SENTINEL;
 import static com.harmonycloud.caas.common.constants.NameConstant.TYPE;
 
+
 import com.harmonycloud.caas.common.model.middleware.CustomConfig;
-import com.harmonycloud.zeus.annotation.Operator;
-import com.harmonycloud.zeus.operator.miiddleware.AbstractRedisOperator;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import org.apache.commons.lang3.StringUtils;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.caas.common.model.middleware.Middleware;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareQuota;
+import com.harmonycloud.zeus.annotation.Operator;
 import com.harmonycloud.zeus.operator.api.RedisOperator;
+import com.harmonycloud.zeus.operator.miiddleware.AbstractRedisOperator;
 import com.harmonycloud.tool.encrypt.PasswordUtils;
 
 import java.util.*;
@@ -146,12 +146,12 @@ public class RedisOperatorImpl extends AbstractRedisOperator implements RedisOpe
     }
 
     @Override
-    public void editConfigMapData(CustomConfig customConfig, List<String> data) {
+    public void editConfigMapData(CustomConfig customConfig, List<String> data){
         for (int i = 0; i < data.size(); ++i) {
             if (data.get(i).contains(customConfig.getName())) {
                 String temp = StringUtils.substring(data.get(i), data.get(i).indexOf(" ") + 1, data.get(i).length());
                 String test = data.get(i).replace(" ", "").replace(temp, "");
-                if (data.get(i).replace(" ", "").replace(temp, "").equals(customConfig.getName())) {
+                if (data.get(i).replace(" ", "").replace(temp, "").equals(customConfig.getName())){
                     data.set(i, data.get(i).replace(temp, customConfig.getValue()));
                 }
             }

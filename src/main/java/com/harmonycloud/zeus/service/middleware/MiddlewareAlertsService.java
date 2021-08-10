@@ -17,11 +17,10 @@ public interface MiddlewareAlertsService {
      * @param clusterId      集群id
      * @param namespace      命名空间
      * @param middlewareName 中间件名称
-     * @param keyword        关键字
+     * @param keyword 关键字
      * @return List<MiddlewareAlertsDTO>
      */
-    List<MiddlewareAlertsDTO> listUsedRules(String clusterId, String namespace, String middlewareName, String keyword)
-        throws Exception;
+    List<MiddlewareAlertsDTO> listUsedRules(String clusterId, String namespace, String middlewareName, String keyword) throws Exception;
 
     /**
      * 获取可添加告警规则列表
@@ -32,20 +31,18 @@ public interface MiddlewareAlertsService {
      * @param type
      * @return List<MiddlewareAlertsDTO>
      */
-    List<MiddlewareAlertsDTO> listRules(String clusterId, String namespace, String middlewareName, String type)
-        throws Exception;
+    List<MiddlewareAlertsDTO> listRules(String clusterId, String namespace, String middlewareName, String type) throws Exception;
 
     /**
      * 创建告警规则
      *
-     * @param clusterId               集群id
-     * @param namespace               命名空间
-     * @param middlewareName          中间件名称
+     * @param clusterId      集群id
+     * @param namespace      命名空间
+     * @param middlewareName 中间件名称
      * @param middlewareAlertsDTOList 中间件告警规则
      * @return List<BeanPrometheusRules>
      */
-    void createRules(String clusterId, String namespace, String middlewareName,
-        List<MiddlewareAlertsDTO> middlewareAlertsDTOList) throws Exception;
+    void createRules(String clusterId, String namespace, String middlewareName, List<MiddlewareAlertsDTO> middlewareAlertsDTOList) throws Exception;
 
     /**
      * 创建告警规则
@@ -70,7 +67,7 @@ public interface MiddlewareAlertsService {
      * 同步告警规则进数据库
      *
      * @param helmChart helm包
-     * @param update    是否更新
+     * @param update 是否更新
      * @return String
      */
     String updateAlerts2Mysql(HelmChartFile helmChart, Boolean update);

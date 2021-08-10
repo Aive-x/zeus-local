@@ -9,12 +9,6 @@ import java.util.Map;
 import com.harmonycloud.caas.common.model.middleware.IngressDTO;
 import com.harmonycloud.caas.common.model.middleware.Middleware;
 import com.harmonycloud.caas.common.model.middleware.ServiceDTO;
-import com.harmonycloud.zeus.integration.registry.bean.harbor.V1HelmChartVersion;
-import com.harmonycloud.zeus.service.k8s.ClusterComponentService;
-import com.harmonycloud.zeus.service.k8s.ClusterService;
-import com.harmonycloud.zeus.service.k8s.GrafanaService;
-import com.harmonycloud.zeus.service.k8s.IngressService;
-import com.harmonycloud.zeus.service.registry.HelmChartService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.caas.common.enums.DictEnum;
 import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.enums.Protocol;
@@ -30,6 +23,12 @@ import com.harmonycloud.caas.common.exception.BusinessException;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterMonitor;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterMonitorInfo;
+import com.harmonycloud.zeus.integration.registry.bean.harbor.V1HelmChartVersion;
+import com.harmonycloud.zeus.service.k8s.ClusterComponentService;
+import com.harmonycloud.zeus.service.k8s.ClusterService;
+import com.harmonycloud.zeus.service.k8s.GrafanaService;
+import com.harmonycloud.zeus.service.k8s.IngressService;
+import com.harmonycloud.zeus.service.registry.HelmChartService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -84,7 +83,7 @@ public class ClusterComponentServiceImpl implements ClusterComponentService {
         // todo 支持自动部署ingress
         // 必须要部署ingress
         if (existCluster.getIngress() == null || StringUtils.isEmpty(existCluster.getIngress().getAddress())
-            || existCluster.getIngress().getTcp() == null || !existCluster.getIngress().getTcp().isEnabled()) {
+                || existCluster.getIngress().getTcp() == null || !existCluster.getIngress().getTcp().isEnabled()) {
             throw new BusinessException(ErrorMessage.INGRESS_CONTROLLER_FIRST);
         }
 
@@ -95,16 +94,14 @@ public class ClusterComponentServiceImpl implements ClusterComponentService {
         integrate(existCluster, componentName);
     }
 
-    private void deployComponent(MiddlewareClusterDTO cluster, String componentName,
-        MiddlewareClusterDTO paramCluster) {
+    private void deployComponent(MiddlewareClusterDTO cluster, String componentName, MiddlewareClusterDTO paramCluster) {
         String repository = cluster.getRegistry().getRegistryAddress() + "/" + cluster.getRegistry().getChartRepo();
         switch (componentName) {
             case "storageBackup":
-                if (CollectionUtils.isEmpty(paramCluster.getStorage()) || paramCluster.getStorage().get(BACKUP)
-                    == null) {
+                if (CollectionUtils.isEmpty(paramCluster.getStorage()) || paramCluster.getStorage().get(BACKUP) == null) {
                     throw new IllegalArgumentException("Minio Ingress TCP port is null");
                 }
-                Map<String, Object> backup = (Map<String, Object>)paramCluster.getStorage().get(BACKUP);
+                Map<String, Object> backup = (Map<String, Object>) paramCluster.getStorage().get(BACKUP);
                 deployMinio(cluster, paramCluster.getDcId(), repository, backup.get("port").toString());
                 break;
             case "monitor":
@@ -134,9 +131,9 @@ public class ClusterComponentServiceImpl implements ClusterComponentService {
 
         // 拼接更新参数
         String bucketName = minioHelmChartName + "-" + namespace;
-        String setValues = "image.repository=" + repository
-            + ",minio.storageClassName=" + defaultStorageClassName
-            + ",minioArgs.bucketName=" + bucketName + ",";
+        String setValues = "image.repository=" + repository 
+                + ",minio.storageClassName=" + defaultStorageClassName 
+                + ",minioArgs.bucketName=" + bucketName + ",";
         // 发布
         helmChartService.upgradeInstall(minioHelmChartName, namespace, setValues, minioHelmChartName,
             version.getVersion(), cluster);
@@ -146,7 +143,7 @@ public class ClusterComponentServiceImpl implements ClusterComponentService {
         try {
             String servicePort = values.getJSONObject("service") != null
                 && StringUtils.isNotBlank(values.getJSONObject("service").getString("port"))
-                ? values.getJSONObject("service").getString("port") : minioServicePort;
+                    ? values.getJSONObject("service").getString("port") : minioServicePort;
             serviceList.get(0).setServiceName(minioHelmChartName + "-svc").setServicePort(servicePort);
             ingressService.createIngressTcp(cluster, namespace, serviceList, false);
         } catch (Exception e) {
@@ -176,11 +173,11 @@ public class ClusterComponentServiceImpl implements ClusterComponentService {
     /**
      * 部署监控
      */
-    private void deployMonitor(MiddlewareClusterDTO cluster, String namespace, String repository,
-        MiddlewareClusterMonitor monitor) {
+    private void deployMonitor(MiddlewareClusterDTO cluster, String namespace, String repository, 
+                               MiddlewareClusterMonitor monitor) {
         String prometheusIngressPort = monitor.getPrometheus().getPort();
         String grafanaIngressPort = monitor.getGrafana().getPort();
-
+        
         // 获取chart最新版本
         V1HelmChartVersion version = getHelmChartLatestVersion(cluster, monitorHelmChartName);
 
@@ -189,20 +186,20 @@ public class ClusterComponentServiceImpl implements ClusterComponentService {
         serviceList.add(new ServiceDTO().setExposePort(grafanaIngressPort));
         serviceList.add(new ServiceDTO().setExposePort(prometheusIngressPort));
         ingressService.checkIngressTcpPort(cluster, namespace, serviceList);
-
+        
         // 拼接更新参数
         String setValues = "image.prometheus.repository=" + repository + "/prometheus" +
-            ",image.configmapReload.repository=" + repository + "/configmap-reload" +
-            ",image.nodeExporter.repository=" + repository + "/node-exporter" +
-            ",image.kubeRbacProxy.repository=" + repository + "/kube-rbac-proxy" +
-            ",image.prometheusAdapter.repository=" + repository + "/k8s-prometheus-adapter-amd64" +
-            ",image.prometheusOperator.repository=" + repository + "/prometheus-operator" +
-            ",image.kubeStateMetrics.repository=" + repository + "/kube-state-metrics" +
-            ",image.nodeExporter.repository=" + repository + "/node-exporter" +
-            ",image.grafana.repository=" + repository + "/grafana" +
-            ",image.dashboard.repository=" + repository + "/k8s-sidecar" +
-            ",image.busybox.repository=" + repository + "/grafana" +
-            ",storage.storageClass=" + defaultStorageClassName;
+                ",image.configmapReload.repository=" + repository + "/configmap-reload" +
+                ",image.nodeExporter.repository=" + repository + "/node-exporter" +
+                ",image.kubeRbacProxy.repository=" + repository + "/kube-rbac-proxy" +
+                ",image.prometheusAdapter.repository=" + repository + "/k8s-prometheus-adapter-amd64" +
+                ",image.prometheusOperator.repository=" + repository + "/prometheus-operator" +
+                ",image.kubeStateMetrics.repository=" + repository + "/kube-state-metrics" +
+                ",image.nodeExporter.repository=" + repository + "/node-exporter" +
+                ",image.grafana.repository=" + repository + "/grafana" +
+                ",image.dashboard.repository=" + repository + "/k8s-sidecar" +
+                ",image.busybox.repository=" + repository + "/grafana" +
+                ",storage.storageClass=" + defaultStorageClassName;
         // 发布
         helmChartService.upgradeInstall(monitorHelmChartName, namespace, setValues, monitorHelmChartName,
             version.getVersion(), cluster);

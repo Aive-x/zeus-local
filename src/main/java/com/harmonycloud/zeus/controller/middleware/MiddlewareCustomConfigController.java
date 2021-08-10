@@ -31,33 +31,31 @@ public class MiddlewareCustomConfigController {
 
     @ApiOperation(value = "获取自定义配置", notes = "获取自定义配置")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "middlewareName", value = "中间件名称", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "type", value = "中间件类型", paramType = "query", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "middlewareName", value = "中间件名称", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "type", value = "中间件类型", paramType = "query", dataTypeClass = String.class),
     })
     @GetMapping
     public BaseResult<List<CustomConfig>> list(@PathVariable("clusterId") String clusterId,
-        @PathVariable("namespace") String namespace,
-        @PathVariable("middlewareName") String middlewareName,
-        @RequestParam("type") String type) throws Exception {
-        return BaseResult.ok(
-            middlewareCustomConfigService.listCustomConfig(clusterId, namespace, middlewareName, type));
+                                               @PathVariable("namespace") String namespace,
+                                               @PathVariable("middlewareName") String middlewareName,
+                                               @RequestParam("type") String type) throws Exception {
+        return BaseResult.ok(middlewareCustomConfigService.listCustomConfig(clusterId, namespace, middlewareName, type));
     }
 
     @ApiOperation(value = "更新自定义配置", notes = "更新自定义配置")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "middlewareName", value = "中间件名称", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "middlewareCustomConfig", value = "自定义配置", paramType = "query",
-            dataTypeClass = String.class),
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "middlewareName", value = "中间件名称", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "middlewareCustomConfig", value = "自定义配置", paramType = "query", dataTypeClass = String.class),
     })
     @PutMapping
     public BaseResult<Middleware> put(@PathVariable("clusterId") String clusterId,
-        @PathVariable("namespace") String namespace,
-        @PathVariable("middlewareName") String middlewareName,
-        @RequestBody MiddlewareCustomConfig middlewareCustomConfig) {
+                                      @PathVariable("namespace") String namespace,
+                                      @PathVariable("middlewareName") String middlewareName,
+                                      @RequestBody MiddlewareCustomConfig middlewareCustomConfig) {
         middlewareCustomConfig.setClusterId(clusterId);
         middlewareCustomConfig.setNamespace(namespace);
         middlewareCustomConfig.setName(middlewareName);
@@ -67,27 +65,24 @@ public class MiddlewareCustomConfigController {
 
     @ApiOperation(value = "获取自定义配置修改记录", notes = "获取自定义配置修改记录")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "middlewareName", value = "中间件名称", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "type", value = "中间件类型", paramType = "query", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "item", value = "配置名称", required = false, paramType = "query",
-            dataTypeClass = String.class),
-        @ApiImplicitParam(name = "startTime", value = "开始时间", required = false, paramType = "query",
-            dataTypeClass = String.class),
-        @ApiImplicitParam(name = "endTime", value = "结束时间", required = false, paramType = "query",
-            dataTypeClass = String.class),
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "middlewareName", value = "中间件名称", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "type", value = "中间件类型", paramType = "query", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "item", value = "配置名称",required = false, paramType = "query", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "startTime", value = "开始时间", required = false, paramType = "query", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "endTime", value = "结束时间", required = false, paramType = "query", dataTypeClass = String.class),
     })
     @GetMapping("/history")
     public BaseResult<List<CustomConfigHistoryDTO>> getHistory(@PathVariable("clusterId") String clusterId,
-        @PathVariable("namespace") String namespace,
-        @PathVariable("middlewareName") String middlewareName,
-        @RequestParam("type") String type,
-        @RequestParam(value = "item", required = false) String item,
-        @RequestParam(value = "startTime", required = false) String startTime,
-        @RequestParam(value = "endTime", required = false) String endTime) {
+                                                               @PathVariable("namespace") String namespace,
+                                                               @PathVariable("middlewareName") String middlewareName,
+                                                               @RequestParam("type") String type,
+                                                               @RequestParam(value = "item", required = false) String item,
+                                                               @RequestParam(value = "startTime", required = false) String startTime,
+                                                               @RequestParam(value = "endTime", required = false) String endTime) {
         return BaseResult.ok(middlewareCustomConfigService.getCustomConfigHistory(clusterId, namespace,
-            middlewareName, type, item, startTime, endTime));
+                middlewareName, type, item, startTime, endTime));
     }
 
 }

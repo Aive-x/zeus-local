@@ -11,12 +11,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.harmonycloud.caas.common.model.ContainerWithStatus;
-import com.harmonycloud.zeus.integration.cluster.PodWrapper;
 import com.harmonycloud.zeus.integration.cluster.PvcWrapper;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareCRD;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareInfo;
 import com.harmonycloud.zeus.service.k8s.MiddlewareCRDService;
-import com.harmonycloud.zeus.service.k8s.PodService;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +29,8 @@ import com.harmonycloud.caas.common.exception.BusinessException;
 import com.harmonycloud.caas.common.model.middleware.Middleware;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareQuota;
 import com.harmonycloud.caas.common.model.middleware.PodInfo;
+import com.harmonycloud.zeus.integration.cluster.PodWrapper;
+import com.harmonycloud.zeus.service.k8s.PodService;
 import com.harmonycloud.tool.numeric.ResourceCalculationUtil;
 
 import io.fabric8.kubernetes.api.model.ContainerStatus;
@@ -84,7 +84,7 @@ public class PodServiceImpl implements PodService {
         List<PodInfo> podInfoList = pods.stream().map(po -> {
             Pod pod = podWrapper.get(clusterId, namespace, po.getName());
             PodInfo pi = convertPodInfo(pod)
-                .setRole(StringUtils.isBlank(po.getType()) ? null : po.getType().toLowerCase());
+                    .setRole(StringUtils.isBlank(po.getType()) ? null : po.getType().toLowerCase());
             // storage
             pi.getResources().setStorageClassQuota(finalStorage).setStorageClassName(finalStorageName);
             return pi;
@@ -98,17 +98,17 @@ public class PodServiceImpl implements PodService {
         if (CollectionUtils.isEmpty(list)) {
             return new ArrayList<>(0);
         }
-
+        
         return list.stream().map(this::convertPodInfo).collect(Collectors.toList());
     }
 
     private PodInfo convertPodInfo(Pod pod) {
         PodInfo pi = new PodInfo()
-            .setPodName(pod.getMetadata().getName())
-            .setPodIp(pod.getStatus().getPodIP())
-            .setNodeName(pod.getSpec().getNodeName())
-            .setCreateTime(pod.getMetadata().getCreationTimestamp())
-            .setStatus(pod.getStatus().getPhase()).setRestartCount(0);
+                .setPodName(pod.getMetadata().getName())
+                .setPodIp(pod.getStatus().getPodIP())
+                .setNodeName(pod.getSpec().getNodeName())
+                .setCreateTime(pod.getMetadata().getCreationTimestamp())
+                .setStatus(pod.getStatus().getPhase()).setRestartCount(0);
         // restart count and time
         for (ContainerStatus containerStatus : pod.getStatus().getContainerStatuses()) {
             if (containerStatus.getRestartCount() > pi.getRestartCount()) {

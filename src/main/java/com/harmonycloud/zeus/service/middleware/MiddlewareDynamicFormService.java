@@ -10,9 +10,8 @@ public interface MiddlewareDynamicFormService {
 
     /**
      * 性能监控
-     *
-     * @param clusterId    集群id
-     * @param chartName    chart包名称
+     * @param clusterId 集群id
+     * @param chartName chart包名称
      * @param chartVersion chart包版本
      * @return string
      */

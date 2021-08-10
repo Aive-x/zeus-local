@@ -9,16 +9,15 @@ import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.harmonycloud.zeus.service.k8s.*;
 import com.harmonycloud.zeus.integration.cluster.PvcWrapper;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareCRD;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareInfo;
-import com.harmonycloud.zeus.integration.cluster.bean.prometheus.PrometheusRule;
 import com.harmonycloud.zeus.integration.registry.bean.harbor.HelmListInfo;
-import com.harmonycloud.zeus.service.k8s.ClusterService;
-import com.harmonycloud.zeus.service.k8s.ConfigMapService;
-import com.harmonycloud.zeus.service.k8s.IngressService;
-import com.harmonycloud.zeus.service.k8s.MiddlewareCRDService;
-import com.harmonycloud.zeus.service.k8s.PrometheusRuleService;
+import com.harmonycloud.zeus.schedule.MiddlewareManageTask;
+import com.harmonycloud.zeus.service.middleware.MiddlewareInfoService;
+import com.harmonycloud.zeus.service.registry.HelmChartService;
+import com.harmonycloud.zeus.util.K8sConvert;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -29,7 +28,6 @@ import org.yaml.snakeyaml.Yaml;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.caas.common.enums.DictEnum;
 import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.enums.middleware.ResourceUnitEnum;
@@ -38,11 +36,8 @@ import com.harmonycloud.caas.common.model.AffinityDTO;
 import com.harmonycloud.caas.common.model.middleware.*;
 import com.harmonycloud.caas.common.model.registry.HelmChartFile;
 import com.harmonycloud.zeus.bean.BeanMiddlewareInfo;
-import com.harmonycloud.zeus.schedule.MiddlewareManageTask;
+import com.harmonycloud.zeus.integration.cluster.bean.prometheus.PrometheusRule;
 import com.harmonycloud.zeus.service.middleware.MiddlewareCustomConfigService;
-import com.harmonycloud.zeus.service.middleware.MiddlewareInfoService;
-import com.harmonycloud.zeus.service.registry.HelmChartService;
-import com.harmonycloud.zeus.util.K8sConvert;
 import com.harmonycloud.tool.collection.JsonUtils;
 import com.harmonycloud.tool.numeric.ResourceCalculationUtil;
 
@@ -99,7 +94,7 @@ public abstract class AbstractBaseOperator {
     public Middleware detail(Middleware middleware) {
         MiddlewareClusterDTO cluster = clusterService.findById(middleware.getClusterId());
         Middleware mw = middlewareCRDService.simpleDetail(middleware.getClusterId(), middleware.getNamespace(),
-            middleware.getType(), middleware.getName());
+                middleware.getType(), middleware.getName());
         if (mw == null) {
             throw new BusinessException(DictEnum.MIDDLEWARE, middleware.getName(), ErrorMessage.NOT_EXIST);
         }
@@ -137,16 +132,17 @@ public abstract class AbstractBaseOperator {
         if (!CollectionUtils.isEmpty(middleware.getIngresses())) {
             try {
                 middleware.getIngresses().forEach(ingress -> ingressService.create(middleware.getClusterId(),
-                    middleware.getNamespace(), middleware.getName(), ingress));
+                        middleware.getNamespace(), middleware.getName(), ingress));
             } catch (Exception e) {
                 log.error("集群：{}，命名空间：{}，中间件：{}，创建对外访问异常", middleware.getClusterId(), middleware.getNamespace(),
-                    middleware.getName(), e);
+                        middleware.getName(), e);
                 throw new BusinessException(ErrorMessage.MIDDLEWARE_SUCCESS_INGRESS_FAIL);
             }
         }
         //5. 修改prometheusRules添加集群
         updateAlerts(middleware);
     }
+
 
     public void delete(Middleware middleware) {
         deletePvc(middleware);
@@ -191,6 +187,7 @@ public abstract class AbstractBaseOperator {
         helmChartService.upgrade(middleware, sb.toString(), cluster);
     }
 
+
     public MonitorDto monitor(Middleware middleware) {
         List<BeanMiddlewareInfo> middlewareInfoList = middlewareInfoService.list(middleware.getClusterId());
         BeanMiddlewareInfo mwInfo = middlewareInfoList.stream()
@@ -201,10 +198,10 @@ public abstract class AbstractBaseOperator {
         if (mwInfo == null) {
             throw new BusinessException(ErrorMessage.MIDDLEWARE_NOT_EXIST);
         }
-        if (StringUtils.isEmpty(mwInfo.getGrafanaId())) {
+        if (StringUtils.isEmpty(mwInfo.getGrafanaId())){
             updateGrafanaId(mwInfo, middleware);
         }
-        if (StringUtils.isEmpty(mwInfo.getGrafanaId())) {
+        if (StringUtils.isEmpty(mwInfo.getGrafanaId())){
             throw new BusinessException(ErrorMessage.GRAFANA_ID_NOT_FOUND);
         }
 
@@ -226,9 +223,9 @@ public abstract class AbstractBaseOperator {
         HelmChartFile helm = helmChartService.getHelmChartFromRegistry(middleware.getClusterId(),
             middleware.getNamespace(), middleware.getName(), middleware.getType());
         String alias;
-        if (CollectionUtils.isEmpty(helm.getDependency())) {
+        if (CollectionUtils.isEmpty(helm.getDependency())){
             alias = helm.getDependency().get("alias");
-        } else {
+        }else {
             alias = mwInfo.getChartName() + "-operator";
         }
         List<HelmListInfo> helmInfos =
@@ -288,6 +285,7 @@ public abstract class AbstractBaseOperator {
         }
     }
 
+
     public void switchMiddleware(Middleware middleware) {
 
     }
@@ -296,7 +294,7 @@ public abstract class AbstractBaseOperator {
      * 从helm chart转回middleware
      */
     public Middleware convertByHelmChart(Middleware middleware, MiddlewareClusterDTO cluster) {
-        if (StringUtils.isEmpty(middleware.getClusterId())) {
+        if (StringUtils.isEmpty(middleware.getClusterId())){
             middleware.setClusterId(cluster.getId());
         }
         JSONObject values = helmChartService.getInstalledValues(middleware, cluster);
@@ -310,17 +308,17 @@ public abstract class AbstractBaseOperator {
     protected void convertCommonByHelmChart(Middleware middleware, JSONObject values) {
         if (values != null) {
             middleware.setAliasName(values.getString("aliasName"))
-                .setAnnotation(values.getString("middleware-desc"))
-                .setLabels(values.getString("middleware-label"))
-                .setVersion(values.getString("version"))
-                .setMode(values.getString(MODE));
+                    .setAnnotation(values.getString("middleware-desc"))
+                    .setLabels(values.getString("middleware-label"))
+                    .setVersion(values.getString("version"))
+                    .setMode(values.getString(MODE));
 
-            if (StringUtils.isNotEmpty(values.getString("chart-version"))) {
+            if (StringUtils.isNotEmpty(values.getString("chart-version"))){
                 middleware.setChartVersion(values.getString("chart-version"));
             }
 
             //动态参数
-            if (values.containsKey("custom")) {
+            if (values.containsKey("custom")){
                 convertDynamicValues(middleware, values);
             }
 
@@ -359,7 +357,8 @@ public abstract class AbstractBaseOperator {
             .setStorageClassQuota(values.getString("storageSize"));
     }
 
-    public MiddlewareQuota checkMiddlewareQuota(Middleware middleware, String quotaKey) {
+
+    public MiddlewareQuota checkMiddlewareQuota(Middleware middleware, String quotaKey){
         if (middleware.getQuota() == null) {
             middleware.setQuota(new HashMap<>());
         }
@@ -467,6 +466,7 @@ public abstract class AbstractBaseOperator {
         return value;
     }
 
+
     /**
      * 替换掉values，子类应该各自覆盖该方法
      */
@@ -483,12 +483,12 @@ public abstract class AbstractBaseOperator {
         }
     }
 
-    protected void replaceSimplyCommonValues(Middleware middleware, MiddlewareClusterDTO cluster, JSONObject values) {
+    protected void replaceSimplyCommonValues(Middleware middleware, MiddlewareClusterDTO cluster, JSONObject values){
         values.put("version", middleware.getVersion());
         values.put("nameOverride", middleware.getName());
         values.put("fullnameOverride", middleware.getName());
         values.put("aliasName",
-            StringUtils.isBlank(middleware.getAliasName()) ? middleware.getName() : middleware.getAliasName());
+                StringUtils.isBlank(middleware.getAliasName()) ? middleware.getName() : middleware.getAliasName());
         values.put("middleware-desc", middleware.getAnnotation());
         values.put("middleware-label", middleware.getLabels());
         values.put("chart-version", middleware.getChartVersion());
@@ -497,7 +497,7 @@ public abstract class AbstractBaseOperator {
         if (!CollectionUtils.isEmpty(middleware.getNodeAffinity())) {
             // convert to k8s model
             JSONObject nodeAffinity = K8sConvert.convertNodeAffinity2Json(
-                middleware.getNodeAffinity().get(0).getLabel(), middleware.getNodeAffinity().get(0).isRequired());
+                    middleware.getNodeAffinity().get(0).getLabel(), middleware.getNodeAffinity().get(0).isRequired());
             if (nodeAffinity != null) {
                 values.put("nodeAffinity", nodeAffinity);
             }
@@ -506,13 +506,18 @@ public abstract class AbstractBaseOperator {
         }
 
         // log
-        if (values.getJSONObject("logging") != null) {
-            JSONObject collection = values.getJSONObject("logging").getJSONObject("collection");
-            JSONObject filelog = collection.getJSONObject("filelog");
-            filelog.put("enabled", middleware.getFilelogEnabled());
-            JSONObject stdout = collection.getJSONObject("stdout");
-            stdout.put("enabled", middleware.getStdoutEnabled());
-        }
+        JSONObject logging = new JSONObject();
+        JSONObject collection = new JSONObject();
+
+        JSONObject filelog = new JSONObject();
+        filelog.put("enabled", middleware.getFilelogEnabled());
+        JSONObject stdout = new JSONObject();
+        stdout.put("enabled", middleware.getStdoutEnabled());
+
+        collection.put("filelog", filelog);
+        collection.put("stdout", stdout);
+        logging.put("collection", collection);
+        values.put("logging", logging);
 
     }
 
@@ -526,7 +531,7 @@ public abstract class AbstractBaseOperator {
         JSONObject image = values.getJSONObject("image");
         Registry registry = cluster.getRegistry();
         image.put("repository", registry.getRegistryAddress() + "/"
-            + (StringUtils.isBlank(registry.getImageRepo()) ? registry.getChartRepo() : registry.getImageRepo()));
+                + (StringUtils.isBlank(registry.getImageRepo()) ? registry.getChartRepo() : registry.getImageRepo()));
     }
 
     /**
@@ -586,7 +591,7 @@ public abstract class AbstractBaseOperator {
      */
     protected void replaceChart(HelmChartFile helmChart, JSONObject values) {
         JSONObject chart = JSONObject.parseObject(helmChart.getYamlFileMap().get(CHART_YAML_NAME));
-
+        
         // 1. 发布时需检查组件Chart.yaml中的依赖关系，如果有依赖控制面组件的话，则需发布时禁止控制面组件发布
         // 即如果dependencies里，有alias名称包含了operator的，需要把对应的operator设置成false
         JSONArray dependencies = chart.getJSONArray("dependencies");
@@ -654,18 +659,18 @@ public abstract class AbstractBaseOperator {
         // 获取cr
         try {
             PrometheusRule prometheusRule =
-                prometheusRuleService.get(middleware.getClusterId(), middleware.getNamespace(), middleware.getName());
+                    prometheusRuleService.get(middleware.getClusterId(), middleware.getNamespace(), middleware.getName());
             prometheusRule.getSpec().getGroups().forEach(group -> group.getRules().forEach(rule -> {
-                if (!CollectionUtils.isEmpty(rule.getLabels())) {
+                if (!CollectionUtils.isEmpty(rule.getLabels())){
                     rule.getLabels().put("clusterId", middleware.getClusterId());
                 }
             }));
             prometheusRuleService.update(middleware.getClusterId(), prometheusRule);
-        } catch (Exception e) {
+        } catch (Exception e){
             log.error("集群{} 分区{} 中间件{}， 告警规则标签添加集群失败", middleware.getClusterId(), middleware.getNamespace(),
                 middleware.getName());
         }
-
+        
     }
 
 }

@@ -25,15 +25,15 @@ public class MiddlewareDynamicFormController {
 
     @ApiOperation(value = "获取动态表单", notes = "获取动态表单")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "chartName", value = "chart包名称", paramType = "query", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "chartVersion", value = "chart包版本", paramType = "query", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "chartName", value = "chart包名称", paramType = "query", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "chartVersion", value = "chart包版本", paramType = "query", dataTypeClass = String.class),
     })
     @GetMapping
     public BaseResult<QuestionYaml> dynamicForm(@PathVariable("clusterId") String clusterId,
-        @RequestParam("chartName") String chartName,
-        @RequestParam("chartVersion") String chartVersion) {
+                                                @RequestParam("chartName") String chartName,
+                                                @RequestParam("chartVersion") String chartVersion) {
         return BaseResult.ok(dynamicFormService.dynamicForm(clusterId, chartName, chartVersion));
     }
 

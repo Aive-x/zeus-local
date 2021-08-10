@@ -1,14 +1,9 @@
 package com.harmonycloud.zeus.integration.cluster;
 
-import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.caas.common.enums.DictEnum;
 import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.exception.BusinessException;
 import com.harmonycloud.zeus.util.K8sClient;
-import io.fabric8.kubernetes.api.model.Container;
-import io.fabric8.kubernetes.api.model.apps.StatefulSet;
-import io.fabric8.kubernetes.api.model.apps.StatefulSetSpec;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
@@ -29,21 +24,21 @@ import static com.harmonycloud.caas.common.constants.middleware.MiddlewareConsta
 public class StatefulSetWrapper {
 
     private static final CustomResourceDefinitionContext CONTEXT = new CustomResourceDefinitionContext.Builder()
-        .withGroup(APPS)
-        .withVersion(V1)
-        .withScope(NAMESPACED)
-        .withPlural(STATEFULSETS)
-        .build();
+            .withGroup(APPS)
+            .withVersion(V1)
+            .withScope(NAMESPACED)
+            .withPlural(STATEFULSETS)
+            .build();
 
     public List<LinkedHashMap> get(String clusterId, String namespace, String name) {
         try {
             KubernetesClient client = K8sClient.getClient(clusterId);
             Map<String, Object> map = K8sClient.getClient(clusterId).customResource(CONTEXT).get(namespace, name);
 
-            LinkedHashMap spec = (LinkedHashMap)map.get("spec");
-            LinkedHashMap template = (LinkedHashMap)spec.get("template");
-            LinkedHashMap templateSpec = (LinkedHashMap)template.get("spec");
-            List<LinkedHashMap> containerList = (List<LinkedHashMap>)templateSpec.get("containers");
+            LinkedHashMap spec = (LinkedHashMap) map.get("spec");
+            LinkedHashMap template = (LinkedHashMap) spec.get("template");
+            LinkedHashMap templateSpec = (LinkedHashMap) template.get("spec");
+            List<LinkedHashMap> containerList = (List<LinkedHashMap>) templateSpec.get("containers");
             return containerList;
         } catch (KubernetesClientException e) {
             if (e.getCode() == 404) {

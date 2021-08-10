@@ -6,6 +6,7 @@ import lombok.experimental.Accessors;
 import java.util.List;
 import java.util.Map;
 
+
 /**
  * @author tangtx
  * @date 2021/03/26 11:00 AM
@@ -17,7 +18,7 @@ public class MiddlewareStatus {
     private String creationTimestamp;
 
     private Map<String, List<MiddlewareInfo>> include;
-
+    
     private String phase;
 
     private MiddlewareResources resources;

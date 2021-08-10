@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.caas.common.enums.DictEnum;
 import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.exception.BusinessException;
@@ -37,11 +36,11 @@ public class MiddlewareWrapper {
      * crd的context
      */
     private static final CustomResourceDefinitionContext CONTEXT = new CustomResourceDefinitionContext.Builder()
-        .withGroup(MIDDLEWARE_CLUSTER_GROUP)
-        .withVersion(MIDDLEWARE_CLUSTER_VERSION)
-        .withScope(NAMESPACED)
-        .withPlural(MIDDLEWARE_PLURAL)
-        .build();
+            .withGroup(MIDDLEWARE_CLUSTER_GROUP)
+            .withVersion(MIDDLEWARE_CLUSTER_VERSION)
+            .withScope(NAMESPACED)
+            .withPlural(MIDDLEWARE_PLURAL)
+            .build();
 
     public List<MiddlewareCRD> list(String clusterId, String namespace, Map<String, String> labels) {
         if (StringUtils.isBlank(namespace)) {

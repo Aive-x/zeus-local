@@ -1,11 +1,9 @@
 package com.harmonycloud.zeus.service.log.impl;
 
-import com.alibaba.fastjson.JSONObject;
 
-import com.harmonycloud.caas.common.enums.DateType;
-import com.harmonycloud.caas.common.enums.DictEnum;
-import com.harmonycloud.caas.common.enums.ErrorCodeMessage;
-import com.harmonycloud.caas.common.enums.EsSearchTypeEnum;
+import com.alibaba.fastjson.JSONObject;
+import com.harmonycloud.caas.common.base.BaseResult;
+import com.harmonycloud.caas.common.enums.*;
 import com.harmonycloud.caas.common.exception.CaasRuntimeException;
 import com.harmonycloud.caas.common.model.middleware.LogQuery;
 import com.harmonycloud.caas.common.model.middleware.LogQueryDto;
@@ -14,7 +12,6 @@ import com.harmonycloud.zeus.bean.BeanLogMsg;
 import com.harmonycloud.zeus.service.k8s.ClusterService;
 import com.harmonycloud.zeus.service.log.LogService;
 import com.harmonycloud.zeus.service.middleware.EsService;
-import com.harmonycloud.zeus.util.ActionReturnUtil;
 import com.harmonycloud.zeus.util.AssertUtil;
 import com.harmonycloud.zeus.util.DateUtil;
 import com.harmonycloud.tool.date.DateUtils;
@@ -45,7 +42,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
@@ -88,8 +84,8 @@ public class LogServiceImpl implements LogService {
         MiddlewareClusterDTO cluster = clusterService.findById(logQuery.getClusterId());
         RestHighLevelClient client = esService.getEsClient(cluster);
         if (StringUtils.isBlank(logQuery.getMiddlewareName())
-            && StringUtils.isBlank(logQuery.getPod())
-            && StringUtils.isBlank(logQuery.getContainer())) {
+                && StringUtils.isBlank(logQuery.getPod())
+                && StringUtils.isBlank(logQuery.getContainer())) {
             throw new CaasRuntimeException(String.valueOf(ErrorCodeMessage.NS_POD_CONTAINER_NOT_BLANK));
         }
         logQuery.setPageSize(MAX_EXPORT_LENGTH);
@@ -103,7 +99,7 @@ public class LogServiceImpl implements LogService {
             if (isExceedMaxResult(e)) {
                 //设置最大查询结果条数
                 logger.info("设置日志条数最大搜索条数,index：{}, clusterId:{}",
-                    JSONObject.toJSONString(logQuery.getIndexes()), cluster.getId());
+                        JSONObject.toJSONString(logQuery.getIndexes()), cluster.getId());
                 esService.updateIndexMaxResultWindow(client, logQuery.getIndexes(), MAX_EXPORT_LENGTH);
                 scrollResp = client.search(request, RequestOptions.DEFAULT);
             } else {
@@ -117,14 +113,11 @@ public class LogServiceImpl implements LogService {
         String datetime = DateUtils.DateToString(now, DateType.YYMMDDHHMMSS.getValue());
 
         response.setContentType("multipart/form-data");
-        response.setHeader("Content-Disposition",
-            "attachment;fileName=" + logQuery.getMiddlewareName() + "_" + datetime + ".log");
+        response.setHeader("Content-Disposition", "attachment;fileName=" + logQuery.getMiddlewareName() + "_" + datetime + ".log");
         outputStream = response.getOutputStream();
         try {
             if (totalHit > MAX_EXPORT_LENGTH) {
-                outputStream.write(
-                    ("Find total " + totalHit + " line messages, only export " + MAX_EXPORT_LENGTH + " lines.\n")
-                        .getBytes());
+                outputStream.write(("Find total " + totalHit + " line messages, only export " + MAX_EXPORT_LENGTH + " lines.\n").getBytes());
             }
             for (SearchHit it : scrollResp.getHits().getHits()) {
                 outputStream.write((it.getSourceAsMap().get("message").toString() + "\n").getBytes());
@@ -140,7 +133,7 @@ public class LogServiceImpl implements LogService {
     }
 
     @Override
-    public ActionReturnUtil getLogContents(LogQuery logQuery) throws Exception {
+    public BaseResult getLogContents(LogQuery logQuery) throws Exception {
         if (StringUtils.isBlank(logQuery.getNamespace())) {
             throw new CaasRuntimeException(String.valueOf(ErrorCodeMessage.PARAMETER_VALUE_NOT_PROVIDE));
         }
@@ -156,11 +149,11 @@ public class LogServiceImpl implements LogService {
 
         if (StringUtils.isBlank(scrollId)) {
             if (StringUtils.isBlank(logQuery.getNamespace())) {
-                return ActionReturnUtil.returnErrorWithData(ErrorCodeMessage.NAMESPACE_NOT_BLANK);
+                return BaseResult.error(ErrorMessage.NAMESPACE_NOT_BLANK);
             }
             if (StringUtils.isBlank(logQuery.getMiddlewareName()) && StringUtils.isBlank(logQuery.getPod())
-                && StringUtils.isBlank(logQuery.getContainer())) {
-                return ActionReturnUtil.returnErrorWithData(ErrorCodeMessage.NS_POD_CONTAINER_NOT_BLANK);
+                    && StringUtils.isBlank(logQuery.getContainer())) {
+                return BaseResult.error(ErrorMessage.NS_POD_CONTAINER_NOT_BLANK);
             }
             SearchRequest request = this.getSearchRequestBuilder(logQuery);
             SearchSourceBuilder source = request.source();
@@ -183,15 +176,15 @@ public class LogServiceImpl implements LogService {
         dataWithScrollId.put("log", logList);
         dataWithScrollId.put("scrollId", scrollId);
         dataWithScrollId.put("totalHit", scrollResp.getHits().getTotalHits());
-        return ActionReturnUtil.returnSuccessWithData(dataWithScrollId);
+        return BaseResult.ok(dataWithScrollId);
     }
 
     @Override
-    public ActionReturnUtil listfileName(LogQuery logQuery) throws Exception {
+    public BaseResult listfileName(LogQuery logQuery) throws Exception {
         AssertUtil.notBlank(logQuery.getClusterId(), DictEnum.CLUSTER_ID);
         TreeSet<String> logFileNames = new TreeSet<String>();
         if (logQuery.getIndexes() == null || logQuery.getIndexes().length == 0) {
-            return ActionReturnUtil.returnSuccessWithData(logFileNames);
+            return BaseResult.ok(logFileNames);
         }
 
         MiddlewareClusterDTO middlewareClusterDTO = clusterService.findById(logQuery.getClusterId());
@@ -225,7 +218,7 @@ public class LogServiceImpl implements LogService {
             }
         });
 
-        return ActionReturnUtil.returnSuccessWithData(fileMapList);
+        return BaseResult.ok(fileMapList);
     }
 
     /**
@@ -234,8 +227,7 @@ public class LogServiceImpl implements LogService {
      * @param client
      * @return
      */
-    private TreeSet<String> listLogFileNames(LogQuery logQuery, RestHighLevelClient client, boolean withPodName)
-        throws IOException {
+    private TreeSet<String> listLogFileNames(LogQuery logQuery, RestHighLevelClient client, boolean withPodName) throws IOException {
         TreeSet<String> logFileNames = new TreeSet<String>();
         SearchResponse scrollResp = null;
         BoolQueryBuilder queryBuilder = this.getQueryBuilder(logQuery);
@@ -266,8 +258,8 @@ public class LogServiceImpl implements LogService {
             return logFileNames;
         }
         builder.query(queryBuilder).sort("offset", SortOrder.DESC)
-            .aggregation(AggregationBuilders.terms("k8s_pod").field("k8s_pod").size(MAX_POD_FETCH_COUNT)
-                .subAggregation(AggregationBuilders.terms("source").field("source").size(MAX_POD_FETCH_COUNT)));
+                .aggregation(AggregationBuilders.terms("k8s_pod").field("k8s_pod").size(MAX_POD_FETCH_COUNT)
+                        .subAggregation(AggregationBuilders.terms("source").field("source").size(MAX_POD_FETCH_COUNT)));
         request.indices(esService.getLogIndexPrefix(logQuery.isPodLog()) + "*");
         if (logQuery.getIndexes().length > 0) {
             request.indices(logQuery.getIndexes());
@@ -307,6 +299,7 @@ public class LogServiceImpl implements LogService {
         return logFileNames;
     }
 
+
     /**
      * 根据查询条件设置SearchRequestBuilder
      *
@@ -344,8 +337,7 @@ public class LogServiceImpl implements LogService {
      * @param logQuery
      * @return
      */
-    private SearchSourceBuilder getSearchRequestBuilderByline(RestHighLevelClient client, LogQuery logQuery,
-        String upOrdown, String timestamp) {
+    private SearchSourceBuilder getSearchRequestBuilderByline(RestHighLevelClient client, LogQuery logQuery, String upOrdown, String timestamp) {
         //日志时间范围查询设置
         BoolQueryBuilder queryBuilder = getQueryBuilderByLine(logQuery, upOrdown, timestamp);
 
@@ -359,18 +351,18 @@ public class LogServiceImpl implements LogService {
         builder.query(queryBuilder);
         SearchRequest request = new SearchRequest();
 
-        request.indices(esService.getLogIndexPrefix(logQuery.isPodLog()) + "*").scroll(
-            new TimeValue(Long.parseLong(scrollTime))).source(builder);
+        request.indices(esService.getLogIndexPrefix(logQuery.isPodLog()) + "*").scroll(new TimeValue(Long.parseLong(scrollTime))).source(builder);
 
         if (StringUtils.equals(UP, upOrdown)) {
             builder.sort("@timestamp", SortOrder.DESC)
-                .sort("offset", SortOrder.DESC);
+                    .sort("offset", SortOrder.DESC);
         } else {
             builder.sort("@timestamp", SortOrder.ASC)
-                .sort("offset", SortOrder.ASC);
+                    .sort("offset", SortOrder.ASC);
         }
         return builder;
     }
+
 
     /**
      * 参数校验，并将接口日志查询对象转换为内部服务查询对象
@@ -400,7 +392,7 @@ public class LogServiceImpl implements LogService {
         // ES中日志时间戳为0时区
         String style = DateType.YYYY_MM_DD_T_HH_MM_SS_Z.getValue();
         if (StringUtils.isNotBlank(logQueryDto.getLogTimeStart())
-            && StringUtils.isNotBlank(logQueryDto.getLogTimeEnd())) {
+                && StringUtils.isNotBlank(logQueryDto.getLogTimeEnd())) {
             fromDate = logQueryDto.getLogTimeStart();
             toDate = logQueryDto.getLogTimeEnd();
         } else {
@@ -411,7 +403,7 @@ public class LogServiceImpl implements LogService {
             SimpleDateFormat format = new SimpleDateFormat(style);
             Date current = new Date();
             Date from = DateUtil.addTime(current, logQueryDto.getRecentTimeUnit(),
-                -logQueryDto.getRecentTimeNum());
+                    -logQueryDto.getRecentTimeNum());
             fromDate = format.format(from);
             toDate = format.format(current);
         }
@@ -455,8 +447,7 @@ public class LogServiceImpl implements LogService {
         MiddlewareClusterDTO middlewareClusterDTO = clusterService.findById(clusterId);
         List<String> existIndexes = esService.getIndexes(middlewareClusterDTO);
         while (indexDate.before(to)) {
-            String index = esService.getLogIndexPrefix(isPodLog) + DateUtil.DateToString(indexDate,
-                DateType.YYYYMMDD_DOT);
+            String index = esService.getLogIndexPrefix(isPodLog) + DateUtil.DateToString(indexDate, DateType.YYYYMMDD_DOT);
             String snapshotIndex = index + ES_INDEX_SNAPSHOT_RESTORE;
             if (existIndexes.contains(index)) {
                 indexes.add(index);
@@ -492,9 +483,9 @@ public class LogServiceImpl implements LogService {
     private BoolQueryBuilder getQueryBuilder(LogQuery logQuery) {
         //日志时间范围查询设置
         QueryBuilder timeFilter = QueryBuilders.rangeQuery("@timestamp").from(logQuery.getLogDateStart())
-            .to(logQuery.getLogDateEnd());
+                .to(logQuery.getLogDateEnd());
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(timeFilter)
-            .filter(QueryBuilders.termQuery("k8s_pod_namespace", logQuery.getNamespace()));
+                .filter(QueryBuilders.termQuery("k8s_pod_namespace", logQuery.getNamespace()));
         queryBuilder.filter(QueryBuilders.termQuery("middleware_name", logQuery.getMiddlewareName()));
         if (StringUtils.isNotBlank(logQuery.getContainer())) {
             queryBuilder.filter(QueryBuilders.termQuery("k8s_container_name", logQuery.getContainer()));
@@ -541,7 +532,7 @@ public class LogServiceImpl implements LogService {
             offsetFilter = QueryBuilders.rangeQuery("offset").from(logQuery.getOffset());
         }
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery().filter(timeFilter).filter(offsetFilter)
-            .filter(QueryBuilders.matchPhraseQuery("k8s_pod_namespace", logQuery.getNamespace()));
+                .filter(QueryBuilders.matchPhraseQuery("k8s_pod_namespace", logQuery.getNamespace()));
         queryBuilder.filter(QueryBuilders.matchPhraseQuery("middleware_name", logQuery.getMiddlewareName()));
         if (StringUtils.isNotBlank(logQuery.getContainer())) {
             queryBuilder.filter(QueryBuilders.matchPhraseQuery("k8s_container_name", logQuery.getContainer()));
@@ -570,7 +561,7 @@ public class LogServiceImpl implements LogService {
         if (e.getSuppressed() != null && e.getSuppressed().length > 0) {
             Throwable cause = e.getSuppressed()[0].getCause();
             if (cause != null && cause.getMessage() != null
-                && cause.getMessage().contains("max_result_window")) {
+                    && cause.getMessage().contains("max_result_window")) {
                 return true;
             }
         }

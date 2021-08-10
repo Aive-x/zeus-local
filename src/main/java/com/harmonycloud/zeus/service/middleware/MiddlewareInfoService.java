@@ -18,6 +18,7 @@ public interface MiddlewareInfoService {
      */
     List<BeanMiddlewareInfo> list(String clusterId);
 
+
     BeanMiddlewareInfo getMiddlewareInfo(String chartName, String chartVersion);
 
     /**

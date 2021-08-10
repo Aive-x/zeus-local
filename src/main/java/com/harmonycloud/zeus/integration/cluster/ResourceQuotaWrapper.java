@@ -35,5 +35,5 @@ public class ResourceQuotaWrapper {
     public ResourceQuota get(String clusterId, String namespace, String name) {
         return K8sClient.getClient(clusterId).resourceQuotas().inNamespace(namespace).withName(name).get();
     }
-
+    
 }

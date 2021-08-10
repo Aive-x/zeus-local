@@ -58,6 +58,15 @@ public interface EsService {
      */
     boolean deleteIndex(String indexName, MiddlewareClusterDTO cluster) throws Exception;
 
+    /**
+     *  初始化数据库慢日志索引
+     *
+     * @param esClient
+     * @return
+     * @throws Exception
+     */
+    void initMysqlSlowLogIndexTemplate(RestHighLevelClient esClient);
+
     PageObject<MysqlSlowSqlDTO> getSlowSql(MiddlewareClusterDTO cluster, SlowLogQuery slowLogQuery) throws Exception;
 
     /**
@@ -68,12 +77,11 @@ public interface EsService {
      */
     Boolean checkEsConnection(MiddlewareClusterDTO cluster);
 
-    String resultByGetRestClient(RestHighLevelClient client, MiddlewareClusterDTO cluster, String endPoint)
-        throws Exception;
+    String resultByGetRestClient(RestHighLevelClient client, MiddlewareClusterDTO cluster, String endPoint) throws Exception;
 
     String getLogIndexPrefix(boolean isPodLog);
 
-    void updateIndexMaxResultWindow(RestHighLevelClient client, String[] index, int maxResultWindow) throws IOException;
+    void updateIndexMaxResultWindow(RestHighLevelClient client, String[] index, int maxResultWindow)throws IOException;
 
     List<String> getIndexes(MiddlewareClusterDTO cluster) throws Exception;
 

@@ -5,9 +5,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.harmonycloud.zeus.service.k8s.ClusterCertService;
+import com.harmonycloud.caas.common.exception.BusinessException;
+import com.harmonycloud.zeus.bean.BeanK8sDefaultCluster;
+import com.harmonycloud.zeus.service.k8s.K8sDefaultCluster;
+import com.harmonycloud.zeus.service.middleware.EsService;
 import com.harmonycloud.zeus.service.k8s.ClusterService;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -15,6 +19,7 @@ import org.springframework.stereotype.Component;
 import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.exception.CaasRuntimeException;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
+import com.harmonycloud.zeus.service.k8s.ClusterCertService;
 import com.harmonycloud.tool.file.FileUtil;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
@@ -22,6 +27,8 @@ import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 /**
  * @author dengyulong
@@ -43,17 +50,10 @@ public class K8sClient {
     private ClusterService clusterService;
     @Autowired
     private ClusterCertService clusterCertService;
-
-    @Value("${k8s.token.path:/run/secrets/kubernetes.io/serviceaccount/token}")
-    private void setToken(String tokenPath) {
-        if (StringUtils.isBlank(token)) {
-            try {
-                K8sClient.token = FileUtil.readFile(tokenPath);
-            } catch (IOException e) {
-                log.error("获取serviceaccount的token异常", e);
-            }
-        }
-    }
+    @Autowired
+    private K8sDefaultCluster k8sDefaultCluster;
+    @Autowired
+    private EsService esService;
 
     public static String getClusterId(MiddlewareClusterDTO cluster) {
         return cluster.getDcId() + "--" + cluster.getName();
@@ -62,8 +62,14 @@ public class K8sClient {
     /**
      * 获取默认的client
      */
-    public static KubernetesClient getDefaultClient() {
-        return InstanceHolder.KUBERNETES_CLIENT;
+    public KubernetesClient getDefaultClient() {
+        if (K8S_CLIENT_MAP.containsKey(DEFAULT_CLIENT)) {
+            return K8S_CLIENT_MAP.get(DEFAULT_CLIENT);
+        }
+        KubernetesClient client = initDefaultClient();
+        //初始化所有集群连接
+        initClients();
+        return client;
     }
 
     /**
@@ -86,6 +92,19 @@ public class K8sClient {
             addK8sClients(middlewareClusters);
             clusterService.initClusterAttributes(middlewareClusters);
         }
+    }
+
+    /**
+     * 获取默认集群信息
+     */
+    public KubernetesClient initDefaultClient(){
+        BeanK8sDefaultCluster defaultCluster = k8sDefaultCluster.get();
+        if (ObjectUtils.isEmpty(defaultCluster)){
+            throw new BusinessException(ErrorMessage.CLUSTER_NOT_REGISTERED);
+        }
+        K8sClient.url = defaultCluster.getUrl();
+        K8sClient.token = defaultCluster.getToken();
+        return InstanceHolder.KUBERNETES_CLIENT;
     }
 
     /**
@@ -122,6 +141,15 @@ public class K8sClient {
             }
             K8S_CLIENT_MAP.put(c.getId(), client);
 
+            //创建es模板
+            try {
+                RestHighLevelClient esClient = esService.getEsClient(c);
+                esService.initMysqlSlowLogIndexTemplate(esClient);
+                log.info("集群:{}索引模板初始化成功", c.getName());
+            } catch (Exception e) {
+                log.error("集群:{}索引模板初始化失败", c.getName(), e);
+            }
+
             // 保存证书
             try {
                 clusterCertService.saveCert(c);
@@ -155,6 +183,10 @@ public class K8sClient {
             client = new DefaultKubernetesClient(new ConfigBuilder().withMasterUrl(c.getAddress()).withTrustCerts(true)
                 .withOauthToken(c.getAccessToken()).build());
         }
+        //初始化添加集群，将首个集群视作默认集群
+        if (CollectionUtils.isEmpty(K8S_CLIENT_MAP)) {
+            K8S_CLIENT_MAP.put(DEFAULT_CLIENT, client);
+        }
         K8S_CLIENT_MAP.put(c.getId(), client);
 
         if (initCert) {
@@ -169,7 +201,7 @@ public class K8sClient {
 
     /**
      * 移除k8s客户端
-     *
+     * 
      * @param clusterId 集群id
      */
     public static void removeClient(String clusterId) {
@@ -217,7 +249,6 @@ public class K8sClient {
     private static class InstanceHolder {
         private static final KubernetesClient KUBERNETES_CLIENT = new DefaultKubernetesClient(new ConfigBuilder()
             .withMasterUrl(url).withTrustCerts(true).withOauthToken(token).withNamespace(null).build());
-
         static {
             K8S_CLIENT_MAP.put(DEFAULT_CLIENT, KUBERNETES_CLIENT);
         }

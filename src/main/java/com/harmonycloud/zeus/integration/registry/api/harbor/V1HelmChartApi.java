@@ -12,7 +12,6 @@ import com.harmonycloud.zeus.integration.registry.bean.harbor.V1HelmChartVersion
 import org.springframework.http.HttpStatus;
 
 import com.alibaba.fastjson.TypeReference;
-
 import com.harmonycloud.caas.common.base.BaseResult;
 import com.harmonycloud.tool.api.AbstractApi;
 import com.harmonycloud.tool.api.client.BaseClient;
@@ -27,14 +26,14 @@ import okhttp3.Call;
  * @date 2021/03/29
  */
 public class V1HelmChartApi extends AbstractApi {
-
+    
     public V1HelmChartApi(BaseClient baseClient) {
         super(baseClient);
     }
 
     /**
      * 下载chart文件
-     *
+     * 
      * @param repositoryName 仓库名称
      * @param chartName      chart名称
      * @param authName       授权用户
@@ -53,7 +52,7 @@ public class V1HelmChartApi extends AbstractApi {
 
     /**
      * 下载chart文件
-     *
+     * 
      * @param repositoryName 仓库名称
      * @param chartName      chart名称
      * @param chartVersion   chart版本

@@ -30,15 +30,16 @@ public class ClusterMiddlewareController {
 
     @ApiOperation(value = "查询中间件列表", notes = "查询中间件列表")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "type", value = "中间件类型", paramType = "query", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "keyword", value = "模糊搜索", paramType = "query", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "type", value = "中间件类型", paramType = "query", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "keyword", value = "模糊搜索", paramType = "query", dataTypeClass = String.class),
     })
     @GetMapping
     public BaseResult<List<Middleware>> list(@PathVariable("clusterId") String clusterId,
-        @RequestParam(value = "type", required = false) String type,
-        @RequestParam(value = "keyword", required = false) String keyword) {
+                                             @RequestParam(value = "type", required = false) String type,
+                                             @RequestParam(value = "keyword", required = false) String keyword) {
         return BaseResult.ok(middlewareService.simpleList(clusterId, null, type, keyword));
     }
+
 
 }

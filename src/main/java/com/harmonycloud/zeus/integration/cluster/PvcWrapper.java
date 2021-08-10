@@ -19,7 +19,7 @@ public class PvcWrapper {
     public void deleteByLabels(String clusterId, String namespace, String labels) {
         K8sClient.getClient(clusterId).persistentVolumeClaims().inNamespace(namespace).withLabel(labels).delete();
     }
-
+    
     public List<PersistentVolumeClaim> list(String clusterId, String namespace) {
         PersistentVolumeClaimList list =
             K8sClient.getClient(clusterId).persistentVolumeClaims().inNamespace(namespace).list();

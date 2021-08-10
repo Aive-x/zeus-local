@@ -5,18 +5,17 @@ import static com.harmonycloud.caas.common.constants.NameConstant.MODE;
 import static com.harmonycloud.caas.common.constants.NameConstant.RESOURCES;
 
 import com.harmonycloud.caas.common.model.middleware.CustomConfig;
-import com.harmonycloud.zeus.annotation.Operator;
-import com.harmonycloud.zeus.operator.miiddleware.AbstractMqOperator;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import org.apache.commons.lang3.StringUtils;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.caas.common.enums.middleware.RocketMQModeEnum;
 import com.harmonycloud.caas.common.model.middleware.Middleware;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareQuota;
+import com.harmonycloud.zeus.annotation.Operator;
 import com.harmonycloud.zeus.operator.api.MqOperator;
+import com.harmonycloud.zeus.operator.miiddleware.AbstractMqOperator;
 
 import java.util.*;
 
@@ -174,11 +173,11 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
     }
 
     @Override
-    public void editConfigMapData(CustomConfig customConfig, List<String> data) {
+    public void editConfigMapData(CustomConfig customConfig, List<String> data){
         for (int i = 0; i < data.size(); ++i) {
             if (data.get(i).contains(customConfig.getName())) {
                 String temp = StringUtils.substring(data.get(i), data.get(i).indexOf("=") + 1, data.get(i).length());
-                if (data.get(i).replace(" ", "").replace(temp, "").replace("=", "").equals(customConfig.getName())) {
+                if (data.get(i).replace(" ", "").replace(temp, "").replace("=", "").equals(customConfig.getName())){
                     data.set(i, data.get(i).replace(temp, customConfig.getValue()));
                 }
             }

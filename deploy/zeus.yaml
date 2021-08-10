@@ -16,74 +16,74 @@ spec:
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - zeus
-            topologyKey: kubernetes.io/hostname
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - zeus
+              topologyKey: kubernetes.io/hostname
       containers:
-      - name: zeus
-        image: middleware/zeus:feature
-        env:
-        - name: JAVA_OPTS
-          value: -Xmx1024m -Xms1024m -Dspring.config.location=/cfg/application.yml
-        - name: aliyun_logs_logstash
-          value: /logs/*
-        - name: aliyun_logs_logstash_tags
-          value: k8s_resource_type=Deployment,k8s_resource_name=caas-api
-        ports:
-        - containerPort: 8080
-          protocol: TCP
-          name: api
-        resources:
-          requests:
-            cpu: 250m
-            memory: 512Mi
-          limits:
-            cpu: "1"
-            memory: 2Gi
-        volumeMounts:
-        - mountPath: /cfg/application.yml
-          name: zeus-config
-          subPath: application.yml
-        - mountPath: /usr/local/zeus-pv
-          name: zeus-upload
-        - mountPath: /var/run
-          name: docker
-        livenessProbe:
-          failureThreshold: 5
-          httpGet:
-            path: /actuator/health
-            port: api
-            scheme: HTTP
-          initialDelaySeconds: 300
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
-        readinessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /actuator/health
-            port: api
-            scheme: HTTP
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 5
+        - name: zeus
+          image: middleware/zeus:feature
+          env:
+            - name: JAVA_OPTS
+              value: -Xmx1024m -Xms1024m -Dspring.config.location=/cfg/application.yml
+            - name: aliyun_logs_logstash
+              value: /logs/*
+            - name: aliyun_logs_logstash_tags
+              value: k8s_resource_type=Deployment,k8s_resource_name=caas-api
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+              name: api
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          volumeMounts:
+            - mountPath: /cfg/application.yml
+              name: zeus-config
+              subPath: application.yml
+            - mountPath: /usr/local/zeus-pv
+              name: zeus-upload
+            - mountPath: /var/run
+              name: docker
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /actuator/health
+              port: api
+              scheme: HTTP
+            initialDelaySeconds: 300
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /actuator/health
+              port: api
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
       volumes:
-      - configMap:
-          items:
-          - key: application-prd.yml
-            path: application.yml
+        - configMap:
+            items:
+              - key: application-prd.yml
+                path: application.yml
+            name: zeus-config
           name: zeus-config
-        name: zeus-config
-      - emptyDir: {}
-        name: zeus-upload
-      - hostPath:
-          path: /var/run
-        name: docker
+        - emptyDir: {}
+          name: zeus-upload
+        - hostPath:
+            path: /var/run
+          name: docker
 ---
 apiVersion: v1
 kind: Service
@@ -92,8 +92,8 @@ metadata:
   namespace: zeus
 spec:
   ports:
-  - port: 8080
-    protocol: TCP
-    targetPort: 8080
+    - port: 8080
+      protocol: TCP
+      targetPort: 8080
   selector:
     app: zeus

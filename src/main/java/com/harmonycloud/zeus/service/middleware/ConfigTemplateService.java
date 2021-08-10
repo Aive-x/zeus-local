@@ -13,7 +13,7 @@ public interface ConfigTemplateService {
     /**
      * 获取模板列表
      *
-     * @param type 集群id
+     * @param type      集群id
      * @return List<CustomConfigTemplateDTO>
      */
     List<CustomConfigTemplateDTO> list(String type);
@@ -21,8 +21,8 @@ public interface ConfigTemplateService {
     /**
      * 获取配置模板
      *
-     * @param type 集群id
-     * @param name 命名空间
+     * @param type      集群id
+     * @param name      命名空间
      * @return CustomConfigTemplateDTO
      */
     CustomConfigTemplateDTO get(String type, String name);

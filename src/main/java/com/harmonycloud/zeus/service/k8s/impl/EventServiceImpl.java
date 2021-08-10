@@ -41,7 +41,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventDetail> getEvents(String clusterId, String namespace, String middlewareName, String middlewareType,
+    public List<EventDetail> getEvents(String clusterId, String namespace, String middlewareName, String middlewareType, 
         String eventType, String kind) {
         MiddlewareCRD mw = middlewareCRDService.getCR(clusterId, namespace, middlewareType, middlewareName);
         if (mw == null) {

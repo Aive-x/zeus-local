@@ -24,7 +24,7 @@ public class WebSocketInterceptor implements HandshakeInterceptor {
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler handler,
-        Map<String, Object> map) throws Exception {
+                                   Map<String, Object> map) throws Exception {
         if (request instanceof ServletServerHttpRequest) {
             ServletServerHttpRequest servletRequest = (ServletServerHttpRequest)request;
             HttpSession session = servletRequest.getServletRequest().getSession();
@@ -77,7 +77,7 @@ public class WebSocketInterceptor implements HandshakeInterceptor {
 
     @Override
     public void afterHandshake(ServerHttpRequest request, ServerHttpResponse response, WebSocketHandler handler,
-        Exception e) {
+                               Exception e) {
         // 如果有websocket的子协议，则response里也需要把子协议带上，否则握手失败
         // todo：当前子协议的值是gateway颁发的token，如果真有子协议时需要再处理
         if (StringUtils.isNotBlank(request.getHeaders().getFirst(WebSocketHttpHeaders.SEC_WEBSOCKET_PROTOCOL))) {

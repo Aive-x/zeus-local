@@ -8,4 +8,6 @@ import com.harmonycloud.zeus.operator.BaseOperator;
  */
 public interface MqOperator extends BaseOperator {
 
+
+
 }

@@ -12,6 +12,7 @@ public class ThreadHelper {
     private static final Semaphore uiSemaphore = new Semaphore(1);
     private static final ExecutorService singleExecutorService = Executors.newSingleThreadExecutor();
 
+
     private static void releaseUiSemaphor() {
         singleExecutorService.submit(() -> {
             uiSemaphore.release();
@@ -27,7 +28,7 @@ public class ThreadHelper {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
-            //            e.printStackTrace();    ==sonar leak==
+//            e.printStackTrace();    ==sonar leak==
         }
     }
 }

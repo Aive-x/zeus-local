@@ -41,8 +41,10 @@ public class MiddlewareCRDServiceImpl implements MiddlewareCRDService {
     /**
      * 查询中间件列表
      *
-     * @param clusterId 集群id
-     * @param namespace 命名空间
+     * @param clusterId
+     *            集群id
+     * @param namespace
+     *            命名空间
      * @return List<Middleware>
      */
     @Override
@@ -156,7 +158,7 @@ public class MiddlewareCRDServiceImpl implements MiddlewareCRDService {
         middleware.setQuota(middlewareQuotaMap);
         List<PodInfo> podInfoList = new ArrayList<>();
         Map<String, List<MiddlewareInfo>> include = k8SMiddlewareCRD.getStatus().getInclude();
-        if (CollectionUtils.isEmpty(include)) {
+        if (CollectionUtils.isEmpty(include)){
             return middleware;
         }
         List<MiddlewareInfo> middlewareInfoList = k8SMiddlewareCRD.getStatus().getInclude().get("pods");
@@ -177,13 +179,13 @@ public class MiddlewareCRDServiceImpl implements MiddlewareCRDService {
     @Override
     public Middleware simpleConvert(MiddlewareCRD mw) {
         return mw == null ? null : new Middleware()
-            .setName(mw.getSpec().getName())
-            .setNamespace(mw.getMetadata().getNamespace())
-            .setClusterId(mw.getMetadata().getClusterName())
-            .setType(MiddlewareTypeEnum.findTypeByCrdType(mw.getSpec().getType()))
-            .setStatus(mw.getStatus().getPhase())
-            .setReason(mw.getStatus().getReason())
-            .setCreateTime(DateUtils.parseUTCDate(mw.getMetadata().getCreationTimestamp()));
+                .setName(mw.getSpec().getName())
+                .setNamespace(mw.getMetadata().getNamespace())
+                .setClusterId(mw.getMetadata().getClusterName())
+                .setType(MiddlewareTypeEnum.findTypeByCrdType(mw.getSpec().getType()))
+                .setStatus(mw.getStatus().getPhase())
+                .setReason(mw.getStatus().getReason())
+                .setCreateTime(DateUtils.parseUTCDate(mw.getMetadata().getCreationTimestamp()));
     }
 
 }

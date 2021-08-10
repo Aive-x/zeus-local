@@ -10,7 +10,6 @@ import org.apache.commons.lang3.StringUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SimplePropertyPreFilter;
-
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -72,7 +71,7 @@ public class K8sConvert {
         }
         return nf;
     }
-
+    
     public static JSONObject convertNodeAffinity2Json(String label, boolean isRequired) {
         NodeAffinity nodeAffinity = convertNodeAffinity(label, isRequired);
         if (nodeAffinity == null) {
@@ -96,7 +95,7 @@ public class K8sConvert {
 
     /**
      * 将k8s的节点亲和转为实体类
-     *
+     * 
      * @param nodeAffinity 节点亲和
      * @param tClass       待转的class类
      * @param <T>          泛型

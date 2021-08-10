@@ -43,10 +43,8 @@ public class NamespaceServiceImpl implements NamespaceService {
     private ResourceQuotaService resourceQuotaService;
     @Autowired
     private MiddlewareCRDService middlewareCRDService;
-
-    @Value(
-        "${k8s.namespace.protect:default,kube-system,kube-public,cluster-top,cicd,caas-system,kube-federation-system," 
-            + "harbor-system,logging,monitoring,velero,middleware-system}")
+    
+    @Value("${k8s.namespace.protect:default,kube-system,kube-public,cluster-top,cicd,caas-system,kube-federation-system,harbor-system,logging,monitoring,velero,middleware-system}")
     private void setProtectNamespaceList(String protectNamespaces) {
         protectNamespaceList.addAll(Arrays.asList(protectNamespaces.split(",")));
     }
@@ -69,8 +67,7 @@ public class NamespaceServiceImpl implements NamespaceService {
     }
 
     @Override
-    public List<Namespace> list(String clusterId, boolean all, boolean withQuota, boolean withMiddleware,
-        String keyword) {
+    public List<Namespace> list(String clusterId, boolean all, boolean withQuota, boolean withMiddleware, String keyword) {
         List<io.fabric8.kubernetes.api.model.Namespace> nsList = namespaceWrapper.list(clusterId);
         List<Namespace> list = nsList.stream()
             .filter(ns -> (all || ns.getMetadata().getLabels() != null

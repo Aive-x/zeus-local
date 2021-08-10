@@ -5,12 +5,11 @@ import static com.harmonycloud.caas.common.constants.middleware.MiddlewareConsta
 import java.io.IOException;
 import java.util.Map;
 
+import com.harmonycloud.zeus.integration.cluster.bean.prometheus.PrometheusRule;
+import com.harmonycloud.zeus.util.K8sClient;
 import org.springframework.stereotype.Component;
 
 import com.alibaba.fastjson.JSONObject;
-
-import com.harmonycloud.zeus.integration.cluster.bean.prometheus.PrometheusRule;
-import com.harmonycloud.zeus.util.K8sClient;
 
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
 

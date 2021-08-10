@@ -28,12 +28,12 @@ public class PVCController {
 
     @ApiOperation(value = "查询pvc列表", notes = "查询pvc列表")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
-        @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class)
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class)
     })
     @GetMapping
     public BaseResult list(@PathVariable("clusterId") String clusterId,
-        @PathVariable("namespace") String namespace) {
+                           @PathVariable("namespace") String namespace) {
         return BaseResult.ok(pvcService.list(clusterId, namespace));
     }
 }

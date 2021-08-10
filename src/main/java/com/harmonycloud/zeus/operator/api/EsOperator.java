@@ -8,4 +8,6 @@ import com.harmonycloud.zeus.operator.BaseOperator;
  */
 public interface EsOperator extends BaseOperator {
 
+
+
 }

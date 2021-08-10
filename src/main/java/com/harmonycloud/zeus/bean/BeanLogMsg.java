@@ -1,5 +1,6 @@
 package com.harmonycloud.zeus.bean;
 
+
 /**
  * Created by ttx on 2019/7/11.
  * 日志输出对象

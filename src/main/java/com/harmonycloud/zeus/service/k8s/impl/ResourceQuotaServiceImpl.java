@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.harmonycloud.zeus.integration.cluster.ResourceQuotaWrapper;
 import com.harmonycloud.zeus.service.k8s.ResourceQuotaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +19,7 @@ import org.springframework.util.CollectionUtils;
 
 import com.harmonycloud.caas.common.enums.middleware.ResourceUnitEnum;
 import com.harmonycloud.caas.common.model.middleware.ResourceQuotaDTO;
+import com.harmonycloud.zeus.integration.cluster.ResourceQuotaWrapper;
 import com.harmonycloud.tool.numeric.ResourceCalculationUtil;
 
 import io.fabric8.kubernetes.api.model.Quantity;

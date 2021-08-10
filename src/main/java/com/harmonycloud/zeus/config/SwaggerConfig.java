@@ -38,50 +38,50 @@ public class SwaggerConfig {
     @Bean
     public Docket createRestApi() {
         return new Docket(DocumentationType.OAS_30)
-            .apiInfo(apiInfo())
-            .ignoredParameterTypes(SessionAttribute.class)
-            .select()
-            .apis(RequestHandlerSelectors.withMethodAnnotation(ApiOperation.class))
-            .paths(PathSelectors.any())
-            .build()
-            .securitySchemes(securitySchemes())
-            .securityContexts(securityContexts())
-            .globalRequestParameters(requestParameters());
+                .apiInfo(apiInfo())
+                .ignoredParameterTypes(SessionAttribute.class)
+                .select()
+                .apis(RequestHandlerSelectors.withMethodAnnotation(ApiOperation.class))
+                .paths(PathSelectors.any())
+                .build()
+                .securitySchemes(securitySchemes())
+                .securityContexts(securityContexts())
+                .globalRequestParameters(requestParameters());
     }
 
     private List<RequestParameter> requestParameters() {
         List<RequestParameter> parameters = new ArrayList<>();
         // fixme 目前不需要这些，之后要是使用了再加回来
-        //        parameters.add(new RequestParameterBuilder()
-        //                .name(DC_ID_KEY)
-        //                .description("数据中心编号")
-        //                .required(false)
-        //                .in(ParameterType.HEADER)
-        //                .build());
-        //        parameters.add(new RequestParameterBuilder()
-        //                .name(LANGUAGE_KEY)
-        //                .description("语言")
-        //                .required(false)
-        //                .in(ParameterType.HEADER)
-        //                .build());
-        //        parameters.add(new RequestParameterBuilder()
-        //                .name(TENANT_ID_KEY)
-        //                .description("租户编号")
-        //                .required(false)
-        //                .in(ParameterType.HEADER)
-        //                .build());
-        //        parameters.add(new RequestParameterBuilder()
-        //                .name(PROJECT_ID_KEY)
-        //                .description("项目编号")
-        //                .required(false)
-        //                .in(ParameterType.HEADER)
-        //                .build());
-        //        parameters.add(new RequestParameterBuilder()
-        //                .name(ROLE_ID_LEY)
-        //                .description("角色编号")
-        //                .required(false)
-        //                .in(ParameterType.HEADER)
-        //                .build());
+//        parameters.add(new RequestParameterBuilder()
+//                .name(DC_ID_KEY)
+//                .description("数据中心编号")
+//                .required(false)
+//                .in(ParameterType.HEADER)
+//                .build());
+//        parameters.add(new RequestParameterBuilder()
+//                .name(LANGUAGE_KEY)
+//                .description("语言")
+//                .required(false)
+//                .in(ParameterType.HEADER)
+//                .build());
+//        parameters.add(new RequestParameterBuilder()
+//                .name(TENANT_ID_KEY)
+//                .description("租户编号")
+//                .required(false)
+//                .in(ParameterType.HEADER)
+//                .build());
+//        parameters.add(new RequestParameterBuilder()
+//                .name(PROJECT_ID_KEY)
+//                .description("项目编号")
+//                .required(false)
+//                .in(ParameterType.HEADER)
+//                .build());
+//        parameters.add(new RequestParameterBuilder()
+//                .name(ROLE_ID_LEY)
+//                .description("角色编号")
+//                .required(false)
+//                .in(ParameterType.HEADER)
+//                .build());
         return parameters;
     }
 
@@ -101,21 +101,22 @@ public class SwaggerConfig {
 
     private List<SecurityReference> securityReferences() {
         List<SecurityReference> securityReferences = new ArrayList<>();
-        AuthorizationScope[] authorizationScopes = new AuthorizationScope[] {new AuthorizationScope("global",
-            "accessEverything")};
+        AuthorizationScope[] authorizationScopes = new AuthorizationScope[]{new AuthorizationScope("global", "accessEverything")};
         securityReferences.add(new SecurityReference("Authorization", authorizationScopes));
         securityReferences.add(new SecurityReference("userToken", authorizationScopes));
         securityReferences.add(new SecurityReference("authType", authorizationScopes));
         return securityReferences;
     }
 
+    
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
-            .title("谐云 中间件平台 OpenAPI")
-            .description("谐云 中间件平台 OpenAPI")
-            .termsOfServiceUrl("http://www.harmonycloud.cn/")
-            .version("1.0.0")
-            .build();
+                .title("谐云 中间件平台 OpenAPI")
+                .description("谐云 中间件平台 OpenAPI")
+                .termsOfServiceUrl("http://www.harmonycloud.cn/")
+                .version("1.0.0")
+                .build();
     }
+
 
 }

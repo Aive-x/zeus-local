@@ -7,4 +7,6 @@ package com.harmonycloud.zeus.service.k8s;
  */
 public abstract class AbstractWorkloadService {
 
+
+
 }

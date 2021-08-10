@@ -1,7 +1,6 @@
 package com.harmonycloud.zeus.integration.cluster.bean;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.harmonycloud.caas.common.model.ClusterCert;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterIngress;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterLogging;
@@ -45,6 +44,7 @@ public class MiddlewareClusterInfo {
     private JSONObject attributes;
     @ApiModelProperty("日志信息")
     private MiddlewareClusterLogging logging;
+
 
     public String getMasterUrl() {
         return this.protocol + "://" + this.address + (this.port == null ? "" : ":" + this.port);

@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareCRD;
-import com.harmonycloud.zeus.service.middleware.MiddlewareInfoService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +19,7 @@ import com.harmonycloud.caas.common.model.middleware.MiddlewareInfoDTO;
 import com.harmonycloud.zeus.bean.BeanMiddlewareInfo;
 import com.harmonycloud.zeus.dao.BeanMiddlewareInfoMapper;
 import com.harmonycloud.zeus.service.k8s.MiddlewareCRDService;
+import com.harmonycloud.zeus.service.middleware.MiddlewareInfoService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,7 +43,7 @@ public class MiddlewareInfoServiceImpl implements MiddlewareInfoService {
         if (list == null) {
             list = new ArrayList<>(0);
         }
-        if (StringUtils.isEmpty(clusterId)) {
+        if (StringUtils.isEmpty(clusterId)){
             return list;
         }
         list.forEach(l -> {
@@ -60,7 +60,7 @@ public class MiddlewareInfoServiceImpl implements MiddlewareInfoService {
         QueryWrapper<BeanMiddlewareInfo> wrapper = new QueryWrapper<BeanMiddlewareInfo>().eq("status", true)
             .eq("chart_name", chartName).eq("chart_version", chartVersion);
         List<BeanMiddlewareInfo> mwInfoList = middlewareInfoMapper.selectList(wrapper);
-        if (CollectionUtils.isEmpty(mwInfoList)) {
+        if (CollectionUtils.isEmpty(mwInfoList)){
             return null;
         }
         return mwInfoList.get(0);
@@ -87,11 +87,11 @@ public class MiddlewareInfoServiceImpl implements MiddlewareInfoService {
             dto.setMiddlewares(finalMiddlewareMap == null || finalMiddlewareMap.get(dto.getChartName()) == null
                 ? new ArrayList<>(0) : finalMiddlewareMap.get(dto.getChartName()))
                 .setReplicas(dto.getMiddlewares().size()).setReplicasStatus(
-                dto.getMiddlewares().stream().allMatch(m -> StringUtils.equals(m.getStatus(), "Running")));
+                    dto.getMiddlewares().stream().allMatch(m -> StringUtils.equals(m.getStatus(), "Running")));
             return dto;
         }).collect(Collectors.toList());
     }
-
+    
     @Override
     public void update(BeanMiddlewareInfo middlewareInfo) {
         if (middlewareInfo.getId() != null) {
@@ -102,5 +102,6 @@ public class MiddlewareInfoServiceImpl implements MiddlewareInfoService {
             middlewareInfoMapper.update(middlewareInfo, wrapper);
         }
     }
+    
 
 }

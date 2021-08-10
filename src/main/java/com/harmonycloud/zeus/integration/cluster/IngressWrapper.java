@@ -13,6 +13,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
+
 /**
  * @author dengyulong
  * @date 2021/03/23
@@ -59,20 +60,17 @@ public class IngressWrapper {
     }
 
     public Ingress update(String clusterId, String namespace, Ingress ingress) {
-        Ingress res = K8sClient.getClient(clusterId).extensions().ingresses().inNamespace(namespace).createOrReplace(
-            ingress);
+        Ingress res = K8sClient.getClient(clusterId).extensions().ingresses().inNamespace(namespace).createOrReplace(ingress);
         return res;
     }
 
     public boolean delete(String clusterId, String namespace, String name) {
-        boolean res = K8sClient.getClient(clusterId).extensions().ingresses().inNamespace(namespace).withName(name)
-            .delete();
+        boolean res = K8sClient.getClient(clusterId).extensions().ingresses().inNamespace(namespace).withName(name).delete();
         return res;
     }
 
     public Ingress get(String clusterId, String namespace, String name) {
-        Ingress res = K8sClient.getClient(clusterId).extensions().ingresses().inNamespace(namespace).withName(name)
-            .get();
+        Ingress res = K8sClient.getClient(clusterId).extensions().ingresses().inNamespace(namespace).withName(name).get();
         return res;
     }
 

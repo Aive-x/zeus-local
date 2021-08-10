@@ -6,7 +6,7 @@ harborUser=admin
 harborPassword=Harbor12345
 # 镜像参数
 image=zeus
-tag=v1.0.0
+tag=v1.1.0
 
 # 先进到项目目录
 cd ..

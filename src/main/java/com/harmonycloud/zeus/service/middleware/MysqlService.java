@@ -41,8 +41,7 @@ public interface MysqlService {
      * @param cron           cron表达式
      * @return
      */
-    void createScheduleBackup(String clusterId, String namespace, String middlewareName, Integer keepBackups,
-        String cron);
+    void createScheduleBackup(String clusterId, String namespace, String middlewareName,Integer keepBackups, String cron);
 
     /**
      * 创建备份
@@ -64,7 +63,6 @@ public interface MysqlService {
      * @param backupName     备份名称
      * @return
      */
-    void deleteBackup(String clusterId, String namespace, String middlewareName, String backupFileName,
-        String backupName) throws Exception;
+    void deleteBackup(String clusterId, String namespace, String middlewareName, String backupFileName, String backupName) throws Exception;
 
 }

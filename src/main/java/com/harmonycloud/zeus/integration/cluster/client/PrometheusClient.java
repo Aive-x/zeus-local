@@ -8,6 +8,7 @@ import com.harmonycloud.tool.api.client.BaseClient;
  */
 public class PrometheusClient extends BaseClient {
 
+
     public PrometheusClient(String basePath) {
         super(basePath);
         setVerifyingSsl(false);

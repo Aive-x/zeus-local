@@ -20,8 +20,7 @@ public class V1UserApi extends AbstractApi {
     }
 
     public V1CurrentUser getCurrentUser(String authName) throws ApiException {
-        Call call = this.localVarHarborClient.buildCall("/users/current", GET, null,
-            new String[] {authName == null ? ADMIN : authName});
+        Call call = this.localVarHarborClient.buildCall("/users/current", GET, null, new String[] {authName == null ? ADMIN : authName});
         Object data = this.localVarHarborClient.execute(call, V1CurrentUser.class).getData();
         return (V1CurrentUser)data;
     }

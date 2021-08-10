@@ -8,12 +8,11 @@ import static com.harmonycloud.caas.common.constants.middleware.MiddlewareConsta
 import java.io.IOException;
 import java.util.Map;
 
+import com.harmonycloud.zeus.integration.cluster.bean.MysqlCluster;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import com.alibaba.fastjson.JSONObject;
-
-import com.harmonycloud.zeus.integration.cluster.bean.MysqlCluster;
 import com.harmonycloud.zeus.util.K8sClient;
 import com.harmonycloud.tool.collection.MapUtils;
 
@@ -30,11 +29,11 @@ public class MysqlClusterWrapper {
      * crd的context
      */
     private static final CustomResourceDefinitionContext CONTEXT = new CustomResourceDefinitionContext.Builder()
-        .withGroup(MYSQL_CLUSTER_GROUP)
-        .withVersion(MYSQL_CLUSTER_VERSION)
-        .withScope(NAMESPACED)
-        .withPlural(MYSQL_CLUSTER_PLURAL)
-        .build();
+            .withGroup(MYSQL_CLUSTER_GROUP)
+            .withVersion(MYSQL_CLUSTER_VERSION)
+            .withScope(NAMESPACED)
+            .withPlural(MYSQL_CLUSTER_PLURAL)
+            .build();
 
     public MysqlCluster get(String clusterId, String namespace, String name) {
         // 获取所有的集群资源

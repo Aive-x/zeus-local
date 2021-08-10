@@ -26,9 +26,9 @@ public abstract class AbstractBaseService {
             try {
                 if (baseClass.isAssignableFrom(entry.getValue().getClass()) && types.length == 0
                     || (funClass.isAssignableFrom(entry.getValue().getClass()) && (boolean)baseClass
-                    .getMethod("support",
-                        entry.getValue().getClass().getAnnotation(Operator.class).paramTypes4One())
-                    .invoke(entry.getValue(), types))) {
+                        .getMethod("support",
+                            entry.getValue().getClass().getAnnotation(Operator.class).paramTypes4One())
+                        .invoke(entry.getValue(), types))) {
                     return (T)entry.getValue();
                 }
             } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
@@ -44,11 +44,9 @@ public abstract class AbstractBaseService {
         for (Map.Entry<String, Object> entry : Singleton.OPERATORS.entrySet()) {
             try {
                 if (baseClass.isAssignableFrom(entry.getValue().getClass()) &&
-                    types.length == 0 || (funClass.isAssignableFrom(entry.getValue().getClass()) &&
-                    (boolean)baseClass.getMethod("support",
-                        entry.getValue().getClass().getAnnotation(Operator.class).paramTypes4Many()).invoke(
-                        entry.getValue(), types))) {
-                    operators.add((T)entry.getValue());
+                        types.length == 0 || (funClass.isAssignableFrom(entry.getValue().getClass()) &&
+                        (boolean) baseClass.getMethod("support", entry.getValue().getClass().getAnnotation(Operator.class).paramTypes4Many()).invoke(entry.getValue(), types))) {
+                    operators.add((T) entry.getValue());
                 }
             } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
                 // TODO process exception

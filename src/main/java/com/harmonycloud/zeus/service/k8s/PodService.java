@@ -25,8 +25,8 @@ public interface PodService {
     /**
      * 查询pod列表
      *
-     * @param clusterId 集群id
-     * @param namespace 命名空间
+     * @param clusterId      集群id
+     * @param namespace      命名空间
      * @return
      */
     List<PodInfo> list(String clusterId, String namespace);

@@ -13,23 +13,17 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.alibaba.fastjson.JSONObject;
-
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.harmonycloud.caas.common.model.middleware.*;
 import com.harmonycloud.zeus.bean.BeanMiddlewareInfo;
 import com.harmonycloud.zeus.integration.registry.bean.harbor.HelmListInfo;
 import com.harmonycloud.zeus.service.registry.HelmChartService;
-import com.harmonycloud.zeus.integration.cluster.PrometheusWrapper;
-import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareCRD;
-import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareInfo;
-import com.harmonycloud.zeus.service.middleware.MiddlewareInfoService;
 import com.harmonycloud.zeus.service.middleware.OverviewService;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -46,10 +40,14 @@ import com.harmonycloud.caas.common.model.PrometheusResponse;
 import com.harmonycloud.caas.common.model.PrometheusResult;
 import com.harmonycloud.zeus.bean.BeanAlertRecord;
 import com.harmonycloud.zeus.dao.BeanAlertRecordMapper;
+import com.harmonycloud.zeus.integration.cluster.PrometheusWrapper;
+import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareCRD;
+import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareInfo;
 import com.harmonycloud.zeus.service.k8s.ClusterService;
 import com.harmonycloud.zeus.service.k8s.MiddlewareCRDService;
 import com.harmonycloud.zeus.service.k8s.NamespaceService;
 import com.harmonycloud.zeus.service.k8s.ResourceQuotaService;
+import com.harmonycloud.zeus.service.middleware.MiddlewareInfoService;
 import com.harmonycloud.tool.date.DateUtils;
 import com.harmonycloud.tool.numeric.ResourceCalculationUtil;
 
@@ -83,8 +81,10 @@ public class OverviewServiceImpl implements OverviewService {
     /**
      * 查询中间件状态
      *
-     * @param clusterId 集群id
-     * @param namespace 命名空间
+     * @param clusterId
+     *            集群id
+     * @param namespace
+     *            命名空间
      * @return
      */
     @Override
@@ -98,8 +98,8 @@ public class OverviewServiceImpl implements OverviewService {
         Map<String, List<Middleware>> middlewareMap =
             middlewares.stream().collect(Collectors.groupingBy(Middleware::getType));
         //获取imagePath
-        List<BeanMiddlewareInfo> mwInfoList = middlewareInfoService.list(null);
-
+        List<BeanMiddlewareInfo> mwInfoList =  middlewareInfoService.list(null);
+        
         List<MiddlewareStatusDto> middlewareStatusDtoList = new ArrayList<>();
         middlewareMap.forEach((key, value) -> {
             MiddlewareStatusDto middlewareStatusDto = new MiddlewareStatusDto();
@@ -296,8 +296,7 @@ public class OverviewServiceImpl implements OverviewService {
     }
 
     @Override
-    public PageInfo<AlertDTO> getAlertRecord(String clusterId, String namespace, Integer current, Integer size,
-        String level) {
+    public PageInfo<AlertDTO> getAlertRecord(String clusterId, String namespace, Integer current, Integer size, String level) {
         if (current != null && size != null) {
             PageHelper.startPage(current, size);
         }
@@ -425,7 +424,7 @@ public class OverviewServiceImpl implements OverviewService {
      * @return middlewareOverviewDTO
      */
     @Override
-    public MiddlewareOverviewDTO getPlatformOverview() {
+    public MiddlewareOverviewDTO getPlatformOverview(){
         MiddlewareOverviewDTO overview = new MiddlewareOverviewDTO();
 
         List<MiddlewareClusterDTO> clusterDTOS = clusterService.listClusters();
@@ -433,7 +432,7 @@ public class OverviewServiceImpl implements OverviewService {
         overview.setTotalClusterCount(clusterDTOS.size());
         // 集群列表详细
         overview.setClusters(new ArrayList<>());
-        //        Map<String, OverviewNamespaceInfo> namespaceMap = new HashMap<>();
+//        Map<String, OverviewNamespaceInfo> namespaceMap = new HashMap<>();
         clusterDTOS.forEach(clusterDTO -> {
 
             OverviewClusterInfo overviewClusterInfo = new OverviewClusterInfo();
@@ -447,8 +446,7 @@ public class OverviewServiceImpl implements OverviewService {
             if (CollectionUtils.isEmpty(namespaces)) {
                 return;
             }
-            Map<String, OverviewNamespaceInfo> namespaceMap = namespaces.stream().filter(
-                namespace -> namespace.isRegistered()).map(namespace -> {
+            Map<String, OverviewNamespaceInfo> namespaceMap = namespaces.stream().filter(namespace -> namespace.isRegistered()).map(namespace -> {
                 OverviewNamespaceInfo overviewNSInfo = new OverviewNamespaceInfo();
                 BeanUtils.copyProperties(namespace, overviewNSInfo);
                 // 累计集群的注册命名空间数
@@ -465,20 +463,19 @@ public class OverviewServiceImpl implements OverviewService {
             //获取chartName对应的chartVersion
             List<HelmListInfo> helmListInfoList = helmChartService.listHelm("", "", clusterDTO);
             Map<String, List<HelmListInfo>> helmListMap =
-                helmListInfoList.stream().collect(Collectors.groupingBy(HelmListInfo::getNamespace));
+                    helmListInfoList.stream().collect(Collectors.groupingBy(HelmListInfo::getNamespace));
             Map<String, Map<String, String>> chartVersionGroup = new HashMap<>();
-            for (String key : helmListMap.keySet()) {
-                Map<String, String> chartVersionMap = helmListMap.get(key).stream().collect(
-                    Collectors.toMap(HelmListInfo::getName, helmInfo -> {
-                        String chart = helmInfo.getChart();
-                        return chart.substring(chart.indexOf(LINE) + 1);
-                    }));
+            for (String key : helmListMap.keySet()){
+                Map<String, String> chartVersionMap = helmListMap.get(key).stream().collect(Collectors.toMap(HelmListInfo::getName , helmInfo -> {
+                    String chart = helmInfo.getChart();
+                    return chart.substring(chart.indexOf(LINE) + 1);
+                }));
                 chartVersionGroup.put(key, chartVersionMap);
             }
             //获取imagePath
             List<BeanMiddlewareInfo> mwInfoList = middlewareInfoService.list(clusterDTO.getId());
             Map<String, String> imagePathMap = mwInfoList.stream().collect(Collectors.toMap(
-                mwInfo -> mwInfo.getChartName() + LINE + mwInfo.getChartVersion(), BeanMiddlewareInfo::getImagePath));
+                    mwInfo -> mwInfo.getChartName() + LINE + mwInfo.getChartVersion(), BeanMiddlewareInfo::getImagePath));
 
             if (CollectionUtils.isEmpty(middlewareInfoDTOList)) {
                 return;
@@ -493,7 +490,7 @@ public class OverviewServiceImpl implements OverviewService {
 
                 // 先检查分区的ResourceQuota是否有配额，没有的话采用所有中间件的配额使用量
                 Map<String, List<String>> resourceQuota
-                    = resourceQuotaService.list(overviewNSInfo.getClusterId(), overviewNSInfo.getName());
+                        = resourceQuotaService.list(overviewNSInfo.getClusterId(), overviewNSInfo.getName());
                 hasCPUInNSQuota = hasCPUInQuota(resourceQuota);
                 if (hasCPUInNSQuota) {
                     overviewNSInfo.setCpu(Double.parseDouble(resourceQuota.get(CPU).get(1)));
@@ -513,9 +510,9 @@ public class OverviewServiceImpl implements OverviewService {
                 overviewInstanceInfo.setType(middleware.getType());
                 overviewInstanceInfo.setChartName(middleware.getType());
                 overviewInstanceInfo.setChartVersion(chartVersionGroup
-                    .getOrDefault(middleware.getNamespace(), new HashMap<>()).getOrDefault(middleware.getName(), ""));
+                        .getOrDefault(middleware.getNamespace(), new HashMap<>()).getOrDefault(middleware.getName(), ""));
                 overviewInstanceInfo.setImagePath(imagePathMap.getOrDefault(
-                    overviewInstanceInfo.getChartName() + LINE + overviewInstanceInfo.getChartVersion(), ""));
+                        overviewInstanceInfo.getChartName() + LINE + overviewInstanceInfo.getChartVersion(), ""));
                 MiddlewareQuota quota = middleware.getQuota().get(middleware.getType());
 
                 overviewInstanceInfo.setNodeCount(quota.getNum());
@@ -534,20 +531,20 @@ public class OverviewServiceImpl implements OverviewService {
                     }
                 }
                 double cpu = ResourceCalculationUtil
-                    .getResourceValue(middleware.getQuota().get(middleware.getType()).getCpu(), CPU, "");
+                        .getResourceValue(middleware.getQuota().get(middleware.getType()).getCpu(), CPU, "");
                 double memory = ResourceCalculationUtil.getResourceValue(
-                    middleware.getQuota().get(middleware.getType()).getMemory(), NameConstant.MEMORY,
-                    ResourceUnitEnum.G.getUnit());
+                        middleware.getQuota().get(middleware.getType()).getMemory(), NameConstant.MEMORY,
+                        ResourceUnitEnum.G.getUnit());
                 overviewInstanceInfo.setTotalCpu(cpu);
                 overviewInstanceInfo.setTotalMemory(memory);
 
                 // 如果分区上没有设置配额（ResourceQuota），则使用实例的配额累加
                 if (!hasCPUInNSQuota) {
                     overviewNSInfo.setCpu(mathAdd(overviewNSInfo.getCpu(), overviewInstanceInfo.getTotalCpu()));
-                    overviewNSInfo.setMemory(
-                        mathAdd(overviewNSInfo.getMemory(), overviewInstanceInfo.getTotalMemory()));
+                    overviewNSInfo.setMemory(mathAdd(overviewNSInfo.getMemory(), overviewInstanceInfo.getTotalMemory()));
                 }
                 overviewNSInfo.getMiddlewares().add(overviewInstanceInfo);
+
 
             });
 
@@ -566,8 +563,8 @@ public class OverviewServiceImpl implements OverviewService {
         try {
             // cpu值列表第二个是配额
             return !CollectionUtils.isEmpty(resourceQuota)
-                && resourceQuota.containsKey(CPU)
-                && Double.parseDouble(resourceQuota.get(CPU).get(1)) > 0.0d;
+                    && resourceQuota.containsKey(CPU)
+                    && Double.parseDouble(resourceQuota.get(CPU).get(1)) > 0.0d;
         } catch (Exception e) {
             log.error(e.getMessage());
             return false;

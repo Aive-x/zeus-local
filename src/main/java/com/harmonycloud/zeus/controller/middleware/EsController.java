@@ -18,4 +18,5 @@ public class EsController {
     @Autowired
     private EsService esService;
 
+
 }

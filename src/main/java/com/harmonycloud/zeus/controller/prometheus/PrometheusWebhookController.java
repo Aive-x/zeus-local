@@ -23,9 +23,10 @@ public class PrometheusWebhookController {
     @Autowired
     private PrometheusWebhookService prometheusWebhookService;
 
+
     @ApiOperation(value = "查询告警规则", notes = "查询告警规则")
     @ApiImplicitParams({
-        @ApiImplicitParam(name = "json", value = "告警内容", paramType = "query", dataTypeClass = String.class)
+            @ApiImplicitParam(name = "json", value = "告警内容", paramType = "query", dataTypeClass = String.class)
     })
     @PostMapping
     public BaseResult alert(@RequestBody String json) throws Exception {

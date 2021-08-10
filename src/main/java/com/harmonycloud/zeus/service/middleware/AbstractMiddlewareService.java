@@ -10,4 +10,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class AbstractMiddlewareService extends AbstractBaseService {
 
+
+    
 }

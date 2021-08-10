@@ -1,8 +1,9 @@
 package com.harmonycloud.zeus.service.middleware.impl;
 
+import org.springframework.stereotype.Service;
+
 import com.harmonycloud.zeus.service.middleware.AbstractMiddlewareService;
 import com.harmonycloud.zeus.service.middleware.MqService;
-import org.springframework.stereotype.Service;
 
 /**
  * @author dengyulong
@@ -10,5 +11,6 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class MqServiceImpl extends AbstractMiddlewareService implements MqService {
-
+    
+    
 }

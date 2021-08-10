@@ -6,14 +6,13 @@ import com.harmonycloud.caas.common.exception.BusinessException;
 import com.harmonycloud.zeus.util.K8sClient;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceList;
-import io.fabric8.kubernetes.api.model.extensions.Ingress;
-import io.fabric8.kubernetes.api.model.extensions.IngressList;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+
 
 /**
  * @author tangtx
