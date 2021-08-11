@@ -4,15 +4,13 @@ import static com.harmonycloud.caas.common.constants.NameConstant.CLUSTER;
 import static com.harmonycloud.caas.common.constants.NameConstant.MODE;
 import static com.harmonycloud.caas.common.constants.NameConstant.RESOURCES;
 
-import com.harmonycloud.caas.common.model.middleware.CustomConfig;
+import com.alibaba.fastjson.JSONArray;
+import com.harmonycloud.caas.common.model.middleware.*;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import org.apache.commons.lang3.StringUtils;
 
 import com.alibaba.fastjson.JSONObject;
 import com.harmonycloud.caas.common.enums.middleware.RocketMQModeEnum;
-import com.harmonycloud.caas.common.model.middleware.Middleware;
-import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
-import com.harmonycloud.caas.common.model.middleware.MiddlewareQuota;
 import com.harmonycloud.zeus.annotation.Operator;
 import com.harmonycloud.zeus.operator.api.MqOperator;
 import com.harmonycloud.zeus.operator.miiddleware.AbstractMqOperator;
@@ -36,6 +34,9 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
         MiddlewareQuota mqQuota = middleware.getQuota().get(middleware.getType());
         replaceCommonResources(mqQuota, values.getJSONObject(RESOURCES));
         replaceCommonStorages(mqQuota, values);
+
+        //替换ACL认证参数
+        replaceACL(middleware, values);
 
         // 资源配额
         JSONObject clusterInfo = values.getJSONObject(CLUSTER);
@@ -199,4 +200,46 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
         configMap.getData().put("broker.properties.tmpl", temp.toString());
     }
 
+    public void replaceACL(Middleware middleware, JSONObject values) {
+        JSONObject acl = new JSONObject();
+        if (middleware.getRocketMQParam().getAcl().getEnable()) {
+            RocketMQACL rocketMQACL = middleware.getRocketMQParam().getAcl();
+            acl.put("enable", rocketMQACL.getEnable());
+            acl.put("globalWhiteRemoteAddresses",
+                    new JSONArray(Arrays.asList(rocketMQACL.getGlobalWhiteRemoteAddresses().split(";"))));
+            JSONArray accounts = new JSONArray();
+            for (RocketMQAccount mqAccount : rocketMQACL.getRocketMQAccountList()) {
+                JSONObject account = new JSONObject();
+                account.put("accessKey", mqAccount.getAccessKey());
+                account.put("secretKey", mqAccount.getSecretKey());
+                account.put("whiteRemoteAddress", mqAccount.getWhiteRemoteAddress());
+                account.put("admin", mqAccount.getAdmin());
+                account.put("defaultTopicPerm", mqAccount.getTopicPerms().get("defaultTopicPerm"));
+                account.put("defaultGroupPerm", mqAccount.getGroupPerms().get("defaultGroupPerm"));
+
+                JSONArray topicPerms = new JSONArray();
+                for (String key : mqAccount.getTopicPerms().keySet()) {
+                    if ("defaultTopicPerm".equals(key)) {
+                        continue;
+                    }
+                    topicPerms.add(key + "=" + mqAccount.getTopicPerms().get(key));
+                }
+                account.put("topicPerms", topicPerms);
+
+                JSONArray groupPerms = new JSONArray();
+                for (String key : mqAccount.getGroupPerms().keySet()) {
+                    if ("defaultGroupPerm".equals(key)) {
+                        continue;
+                    }
+                    groupPerms.add(key + "=" + mqAccount.getGroupPerms().get(key));
+                }
+                account.put("groupPerms", groupPerms);
+                accounts.add(account);
+            }
+            acl.put("accounts", accounts);
+        } else {
+            acl.put("enable", false);
+        }
+        values.put("acl", acl);
+    }
 }

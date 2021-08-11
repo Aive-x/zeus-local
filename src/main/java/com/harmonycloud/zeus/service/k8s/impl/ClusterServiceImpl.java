@@ -394,6 +394,9 @@ public class ClusterServiceImpl implements ClusterService {
     }
 
     private MiddlewareClusterDTO getFromClusterMap(String clusterId) {
+        if (CollectionUtils.isEmpty(CLUSTER_MAP)){
+            k8sClient.initClients();
+        }
         return CLUSTER_MAP.get(clusterId);
     }
 
