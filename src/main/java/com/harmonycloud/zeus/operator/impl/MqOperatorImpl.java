@@ -80,6 +80,7 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
         // 处理mq特有参数
         if (values != null) {
             convertResourcesByHelmChart(middleware, middleware.getType(), values.getJSONObject(RESOURCES));
+            convertACL(middleware, values);
 
             JSONObject clusterInfo = values.getJSONObject(CLUSTER);
             middleware.setMode(clusterInfo.getString(MODE));
@@ -242,4 +243,61 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
         }
         values.put("acl", acl);
     }
+
+
+    public void convertACL(Middleware middleware, JSONObject values) {
+        if (values.containsKey("acl")) {
+            JSONObject jsonAcl = values.getJSONObject("acl");
+            if (jsonAcl.getBooleanValue("enable")) {
+                RocketMQParam param = new RocketMQParam();
+                RocketMQACL acl = new RocketMQACL();
+
+                JSONArray globalWhiteRemoteAddresses = jsonAcl.getJSONArray("globalWhiteRemoteAddresses");
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < globalWhiteRemoteAddresses.size(); ++i) {
+                    builder.append(globalWhiteRemoteAddresses.get(i)).append(";");
+                }
+                acl.setGlobalWhiteRemoteAddresses(builder.toString());
+                acl.setEnable(true);
+
+                List<RocketMQAccount> accountList = new ArrayList<>();
+
+                JSONArray accounts = jsonAcl.getJSONArray("accounts");
+                for (int i = 0; i < accounts.size(); ++i) {
+                    RocketMQAccount account = new RocketMQAccount();
+                    JSONObject jsonAccount = accounts.getJSONObject(i);
+                    account.setAccessKey(jsonAccount.getString("accessKey"));
+                    account.setAdmin(jsonAccount.getBooleanValue("admin"));
+                    account.setSecretKey(jsonAccount.getString("secretKey"));
+
+                    Map<String, String> topicPerms = new HashMap<>();
+                    Map<String, String> groupPerms = new HashMap<>();
+                    topicPerms.put("defaultTopicPerm", jsonAccount.getString("defaultTopicPerm"));
+                    groupPerms.put("defaultGroupPerm", jsonAccount.getString("defaultGroupPerm"));
+
+                    JSONArray jsonTopicPerms = jsonAccount.getJSONArray("topicPerms");
+                    for (int j = 0; j < jsonTopicPerms.size(); ++j) {
+                        String[] perm = jsonTopicPerms.getString(j).split("=");
+                        topicPerms.put(perm[0], perm[1]);
+                    }
+
+                    JSONArray jsonGroupPerms = jsonAccount.getJSONArray("groupPerms");
+                    for (int j = 0; j < jsonGroupPerms.size(); ++j) {
+                        String[] perm = jsonGroupPerms.getString(j).split("=");
+                        groupPerms.put(perm[0], perm[1]);
+                    }
+
+                    account.setTopicPerms(topicPerms);
+                    account.setGroupPerms(groupPerms);
+
+                    accountList.add(account);
+                }
+
+                acl.setRocketMQAccountList(accountList);
+                param.setAcl(acl);
+                middleware.setRocketMQParam(param);
+            }
+        }
+    }
+
 }
