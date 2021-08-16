@@ -379,7 +379,7 @@ public class HelmChartServiceImpl extends AbstractRegistryService implements Hel
     }
 
     @Override
-    public void upgradeCustomConfig(Middleware middleware, JSONObject values, JSONObject newValues,
+    public void upgrade(Middleware middleware, JSONObject values, JSONObject newValues,
         MiddlewareClusterDTO cluster) {
 
         String chartName = middleware.getChartName();

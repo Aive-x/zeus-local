@@ -335,7 +335,7 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
                 args.put(key, dataMap.get(key));
             }
         }
-        helmChartService.upgradeCustomConfig(middleware, values, newValues, cluster);
+        helmChartService.upgrade(middleware, values, newValues, cluster);
     }
 
 

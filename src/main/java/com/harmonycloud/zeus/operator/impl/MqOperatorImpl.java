@@ -141,6 +141,15 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
             }
         }
 
+        //ACL认证修改
+        if (middleware.getRocketMQParam() != null && middleware.getRocketMQParam().getAcl() != null &&
+        middleware.getRocketMQParam().getAcl().getEnable() != null){
+            JSONObject values = helmChartService.getInstalledValues(middleware, cluster);
+            JSONObject newValues = JSONObject.parseObject(values.toJSONString());
+            replaceACL(middleware, newValues);
+            helmChartService.upgrade(middleware, values, newValues, cluster);
+        }
+
         // 没有修改，直接返回
         if (sb.length() == 0) {
             return;
@@ -201,6 +210,9 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
         configMap.getData().put("broker.properties.tmpl", temp.toString());
     }
 
+    /**
+     * 写入values.yaml
+     */
     public void replaceACL(Middleware middleware, JSONObject values) {
         JSONObject acl = new JSONObject();
         if (middleware.getRocketMQParam().getAcl().getEnable()) {
@@ -244,7 +256,9 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
         values.put("acl", acl);
     }
 
-
+    /**
+     * 转化为对象
+     */
     public void convertACL(Middleware middleware, JSONObject values) {
         if (values.containsKey("acl")) {
             JSONObject jsonAcl = values.getJSONObject("acl");
@@ -261,7 +275,6 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
                 acl.setEnable(true);
 
                 List<RocketMQAccount> accountList = new ArrayList<>();
-
                 JSONArray accounts = jsonAcl.getJSONArray("accounts");
                 for (int i = 0; i < accounts.size(); ++i) {
                     RocketMQAccount account = new RocketMQAccount();
@@ -269,6 +282,7 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
                     account.setAccessKey(jsonAccount.getString("accessKey"));
                     account.setAdmin(jsonAccount.getBooleanValue("admin"));
                     account.setSecretKey(jsonAccount.getString("secretKey"));
+                    account.setWhiteRemoteAddress(jsonAccount.getString("whiteRemoteAddress"));
 
                     Map<String, String> topicPerms = new HashMap<>();
                     Map<String, String> groupPerms = new HashMap<>();

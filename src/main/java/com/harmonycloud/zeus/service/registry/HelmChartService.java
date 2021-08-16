@@ -159,7 +159,7 @@ public interface HelmChartService {
      * @param newValues    新values
      * @param cluster      集群信息
      */
-    void upgradeCustomConfig(Middleware middleware, JSONObject values, JSONObject newValues, MiddlewareClusterDTO cluster);
+    void upgrade(Middleware middleware, JSONObject values, JSONObject newValues, MiddlewareClusterDTO cluster);
 
     /**
      * 更新/发布 chart
