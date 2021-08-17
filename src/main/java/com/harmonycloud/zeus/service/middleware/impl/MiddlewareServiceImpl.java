@@ -140,7 +140,9 @@ public class MiddlewareServiceImpl extends AbstractBaseService implements Middle
         operator.createPreCheck(middleware, cluster);
         // create
         middlewareManageTask.asyncCreate(middleware, cluster, operator);
-        //创建灾备实例
+        // 将headless服务通过NodePort对外暴露
+        middlewareManageTask.asyncCreateNodePortService(middleware, this, "headless");
+        // 创建灾备实例
         this.createDisasterRecoveryMiddleware(middleware);
     }
 
@@ -258,8 +260,8 @@ public class MiddlewareServiceImpl extends AbstractBaseService implements Middle
     public void createDisasterRecoveryMiddleware(Middleware middleware) {
         MysqlDTO mysqlDTO = middleware.getMysqlDTO();
         if (mysqlDTO.getOpenDisasterRecoveryMode() != null && mysqlDTO.getOpenDisasterRecoveryMode()) {
-            //1.为实例创建对外服务(NodePort)
-            middlewareManageTask.asyncCreateNodePortService(middleware, this);
+            //1.为实例创建只读对外服务(NodePort)
+            middlewareManageTask.asyncCreateNodePortService(middleware, this, "readonly");
             //2.设置灾备实例信息，创建灾备实例
             //2.1 设置灾备实例信息
             Middleware relationMiddleware = middleware.getRelationMiddleware();
@@ -292,16 +294,17 @@ public class MiddlewareServiceImpl extends AbstractBaseService implements Middle
     /**
      * 创建对外服务(NodePort)
      * @param middleware
+     * @param serviceType 服务类型，readonly,headless
      */
-    public void createOpenService(Middleware middleware){
+    public void createOpenService(Middleware middleware,String serviceType){
         //1.获取所有服务
         List<ServicePortDTO> servicePortDTOS = serviceService.list(middleware.getClusterId(), middleware.getNamespace(), middleware.getName(), middleware.getType());
-        List<ServicePortDTO> readonlyServiceList = servicePortDTOS.stream().filter(servicePortDTO -> servicePortDTO.getServiceName().endsWith("readonly")).collect(Collectors.toList());
+        List<ServicePortDTO> serviceList = servicePortDTOS.stream().filter(servicePortDTO -> servicePortDTO.getServiceName().endsWith(serviceType)).collect(Collectors.toList());
 
-        if (!CollectionUtils.isEmpty(readonlyServiceList)) {
-            ServicePortDTO servicePortDTO = readonlyServiceList.get(0);
+        if (!CollectionUtils.isEmpty(serviceList)) {
+            ServicePortDTO servicePortDTO = serviceList.get(0);
             PortDetailDTO portDetailDTO = servicePortDTO.getPortDetailDtoList().get(0);
-            //2.将readonly服务通过NodePort暴露为对外服务
+            //2.将服务通过NodePort暴露为对外服务
             boolean successCreateService = false;
             int servicePort = 31000;
             while (!successCreateService) {
@@ -309,16 +312,16 @@ public class MiddlewareServiceImpl extends AbstractBaseService implements Middle
                         middleware.getClusterId(), middleware.getNamespace(), middleware.getName(), servicePort);
                 try {
                     IngressDTO ingressDTO = new IngressDTO();
-                    List<ServiceDTO> serviceList = new ArrayList<>();
+                    List<ServiceDTO> serviceDTOList = new ArrayList<>();
                     ServiceDTO serviceDTO = new ServiceDTO();
                     serviceDTO.setExposePort(String.valueOf(servicePort));
                     serviceDTO.setTargetPort(portDetailDTO.getTargetPort());
                     serviceDTO.setServicePort(portDetailDTO.getPort());
                     serviceDTO.setServiceName(servicePortDTO.getServiceName());
-                    serviceList.add(serviceDTO);
+                    serviceDTOList.add(serviceDTO);
 
                     ingressDTO.setMiddlewareType(MiddlewareTypeEnum.MYSQL.getType());
-                    ingressDTO.setServiceList(serviceList);
+                    ingressDTO.setServiceList(serviceDTOList);
                     ingressDTO.setExposeType(MIDDLEWARE_EXPOSE_NODEPORT);
                     ingressService.create(middleware.getClusterId(), middleware.getNamespace(), middleware.getName(), ingressDTO);
                     successCreateService = true;

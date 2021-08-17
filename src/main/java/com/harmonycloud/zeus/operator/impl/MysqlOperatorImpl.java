@@ -5,13 +5,17 @@ import static com.harmonycloud.caas.common.constants.MinioConstant.MINIO;
 import static com.harmonycloud.caas.common.constants.NameConstant.RESOURCES;
 import static com.harmonycloud.caas.common.constants.NameConstant.STORAGE;
 import static com.harmonycloud.caas.common.constants.NameConstant.TYPE;
+import static com.harmonycloud.caas.common.constants.middleware.MiddlewareConstant.MIDDLEWARE_EXPOSE_NODEPORT;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.harmonycloud.caas.common.constants.MysqlConstant;
 import com.harmonycloud.caas.common.model.middleware.*;
 import com.harmonycloud.zeus.integration.cluster.MysqlClusterWrapper;
+import com.harmonycloud.zeus.integration.cluster.bean.*;
+import com.harmonycloud.zeus.service.k8s.MysqlReplicateCRDService;
 import com.harmonycloud.zeus.service.middleware.BackupService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,15 +28,6 @@ import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.enums.middleware.MiddlewareTypeEnum;
 import com.harmonycloud.caas.common.exception.BusinessException;
 import com.harmonycloud.zeus.annotation.Operator;
-import com.harmonycloud.zeus.integration.cluster.bean.BackupCRD;
-import com.harmonycloud.zeus.integration.cluster.bean.BackupSpec;
-import com.harmonycloud.zeus.integration.cluster.bean.BackupStorageProvider;
-import com.harmonycloud.zeus.integration.cluster.bean.BackupTemplate;
-import com.harmonycloud.zeus.integration.cluster.bean.Minio;
-import com.harmonycloud.zeus.integration.cluster.bean.MysqlCluster;
-import com.harmonycloud.zeus.integration.cluster.bean.ScheduleBackupCRD;
-import com.harmonycloud.zeus.integration.cluster.bean.ScheduleBackupSpec;
-import com.harmonycloud.zeus.integration.cluster.bean.Status;
 import com.harmonycloud.zeus.integration.minio.MinioWrapper;
 import com.harmonycloud.zeus.operator.api.MysqlOperator;
 import com.harmonycloud.zeus.operator.miiddleware.AbstractMysqlOperator;
@@ -65,7 +60,8 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
     private MinioWrapper minioWrapper;
     @Autowired
     private ClusterService clusterService;
-
+    @Autowired
+    private MysqlReplicateCRDService mysqlReplicateCRDService;
 
     @Override
     public boolean support(Middleware middleware) {
@@ -110,11 +106,41 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         // 处理mysql的特有参数
         if (values != null) {
             convertResourcesByHelmChart(middleware, middleware.getType(), values.getJSONObject(RESOURCES));
+            JSONObject args = values.getJSONObject("args");
+            middleware.setPassword(args.getString("root_password"));
+            middleware.setCharSet(args.getString("character_set_server"));
+            middleware.setPort(args.getIntValue("server_port"));
 
-            JSONObject mysqlArgs = values.getJSONObject("args");
-            middleware.setPassword(mysqlArgs.getString("root_password"));
-            middleware.setCharSet(mysqlArgs.getString("character_set_server"));
-            middleware.setPort(mysqlArgs.getIntValue("server_port"));
+            MysqlDTO mysqlDTO = new MysqlDTO();
+            mysqlDTO.setReplicaCount(args.getIntValue(MysqlConstant.REPLICA_COUNT));
+            // 获取关联实例信息
+            Boolean isSource = args.getBoolean(MysqlConstant.IS_SOURCE);
+            if (isSource != null) {
+                mysqlDTO.setOpenDisasterRecoveryMode(true);
+                mysqlDTO.setIsSource(isSource);
+                mysqlDTO.setReplicaCount(args.getIntValue(MysqlConstant.REPLICA_COUNT));
+                //获取关联实例信息
+                String relationClusterId = args.getString(MysqlConstant.RELATION_CLUSTER_ID);
+                String relationNamespace = args.getString(MysqlConstant.RELATION_NAMESPACE);
+                String relationName = args.getString(MysqlConstant.RELATION_NAME);
+                String relationAliasName = args.getString(MysqlConstant.RELATION_ALIAS_NAME);
+                mysqlDTO.setRelationClusterId(relationClusterId);
+                mysqlDTO.setRelationNamespace(relationNamespace);
+                mysqlDTO.setRelationName(relationName);
+                mysqlDTO.setRelationAliasName(relationAliasName);
+                middleware.setMysqlDTO(mysqlDTO);
+
+                MysqlReplicateCRD mysqlReplicate;
+                if (isSource) {
+                    mysqlReplicate = mysqlReplicateCRDService.getMysqlReplicate(relationClusterId, relationNamespace, relationName);
+                } else {
+                    mysqlReplicate = mysqlReplicateCRDService.getMysqlReplicate(cluster.getId(), middleware.getNamespace(), middleware.getName());
+                }
+                if (mysqlReplicate != null) {
+                    mysqlDTO.setPhase(mysqlReplicate.getStatus().getPhase());
+                    //mysqlDTO.setLastUpdateTime(mysqlReplicate.getStatus().getSlaves().get(0).getLastSuccessTime());
+                }
+            }
         }
 
         return middleware;
@@ -485,4 +511,10 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         }
     }
 
+    @Override
+    public void switchDisasterRecovery(String clusterId, String namespace, String middlewareName) throws Exception {
+        MysqlReplicateCRD mysqlReplicate = mysqlReplicateCRDService.getMysqlReplicate(clusterId, namespace, middlewareName);
+        mysqlReplicate.getSpec().setEnable(false);
+        mysqlReplicateCRDService.createOrReplaceMysqlReplicate(clusterId, mysqlReplicate);
+    }
 }

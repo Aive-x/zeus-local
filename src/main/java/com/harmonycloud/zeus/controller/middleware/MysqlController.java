@@ -101,4 +101,29 @@ public class MysqlController {
         return BaseResult.ok();
     }
 
+    @ApiOperation(value = "灾备切换", notes = "灾备切换")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "mysqlName", value = "中间件名称", paramType = "path", dataTypeClass = String.class)
+    })
+    @GetMapping("/{mysqlName}/disasterRecovery")
+    public BaseResult switchDisasterRecovery(@PathVariable("clusterId") String clusterId,
+                                             @RequestParam("namespace") String namespace,
+                                             @PathVariable("mysqlName") String mysqlName){
+        return mysqlService.switchDisasterRecovery(clusterId, namespace, mysqlName);
+    }
+
+    @ApiOperation(value = "查询mysql访问信息", notes = "查询mysql访问信息")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "clusterId", value = "集群id", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
+            @ApiImplicitParam(name = "mysqlName", value = "中间件名称", paramType = "path", dataTypeClass = String.class)
+    })
+    @GetMapping("/{mysqlName}/queryAccessInfo")
+    public BaseResult queryAccessInfo(@PathVariable("clusterId") String clusterId,
+                                      @RequestParam("namespace") String namespace,
+                                      @PathVariable("mysqlName") String mysqlName) {
+        return mysqlService.queryAccessInfo(clusterId, namespace, mysqlName);
+    }
 }

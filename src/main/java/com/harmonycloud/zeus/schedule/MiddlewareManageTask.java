@@ -61,8 +61,8 @@ public class MiddlewareManageTask {
      * @param middlewareService
      */
     @Async("singleThreadExecutor")
-    public void asyncCreateNodePortService(Middleware middleware, MiddlewareServiceImpl middlewareService){
-        middlewareService.createOpenService(middleware);
+    public void asyncCreateNodePortService(Middleware middleware, MiddlewareServiceImpl middlewareService, String serviceType){
+        middlewareService.createOpenService(middleware, serviceType);
     }
 
     /**
