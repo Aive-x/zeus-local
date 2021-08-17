@@ -1,5 +1,6 @@
 package com.harmonycloud.zeus.schedule;
 
+import com.harmonycloud.zeus.service.middleware.impl.MiddlewareServiceImpl;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +26,7 @@ public class MiddlewareManageTask {
      * @param cluster    集群
      * @param operator   operator实现
      */
-    @Async("taskExecutor")
+    @Async("singleThreadExecutor")
     public void asyncCreate(Middleware middleware, MiddlewareClusterDTO cluster, BaseOperator operator) {
         operator.create(middleware, cluster);
     }
@@ -54,4 +55,23 @@ public class MiddlewareManageTask {
         operator.switchMiddleware(middleware);
     }
 
+    /**
+     * 异步创建NodePort对外服务
+     * @param middleware
+     * @param middlewareService
+     */
+    @Async("singleThreadExecutor")
+    public void asyncCreateNodePortService(Middleware middleware, MiddlewareServiceImpl middlewareService, String serviceType){
+        middlewareService.createOpenService(middleware, serviceType);
+    }
+
+    /**
+     * 异步创建mysql源实例和灾备实例关联关系
+     * @param middleware
+     * @param middlewareService
+     */
+    @Async("singleThreadExecutor")
+    public void asyncCreateMysqlReplicate(Middleware middleware,Middleware disasterRecovery, MiddlewareServiceImpl middlewareService){
+        middlewareService.createMysqlReplicate(middleware, disasterRecovery);
+    }
 }

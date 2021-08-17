@@ -2,6 +2,7 @@ package com.harmonycloud.zeus.service.middleware;
 
 import java.util.List;
 
+import com.harmonycloud.caas.common.base.BaseResult;
 import com.harmonycloud.caas.common.model.middleware.MysqlBackupDto;
 import com.harmonycloud.caas.common.model.middleware.ScheduleBackupConfig;
 
@@ -65,4 +66,19 @@ public interface MysqlService {
      */
     void deleteBackup(String clusterId, String namespace, String middlewareName, String backupFileName, String backupName) throws Exception;
 
+    /**
+     * 灾备切换
+     * @param clusterId      集群id
+     * @param namespace      命名空间
+     * @param middlewareName 中间件名称
+     */
+    BaseResult switchDisasterRecovery(String clusterId, String namespace, String middlewareName);
+
+    /**
+     * 灾备切换
+     * @param clusterId      集群id
+     * @param namespace      命名空间
+     * @param middlewareName 中间件名称
+     */
+    BaseResult queryAccessInfo(String clusterId, String namespace, String middlewareName);
 }

@@ -56,5 +56,13 @@ public interface MysqlOperator extends BaseOperator {
      */
     void deleteBackup(Middleware middleware, String backupFileName, String backupName) throws Exception;
 
+    /**
+     * 灾备切换
+     * @param clusterId 集群id
+     * @param namespace 分区名称
+     * @param middlewareName 中间件名称
+     * @throws Exception
+     */
+    void switchDisasterRecovery(String clusterId, String namespace, String middlewareName) throws Exception;
 
 }
