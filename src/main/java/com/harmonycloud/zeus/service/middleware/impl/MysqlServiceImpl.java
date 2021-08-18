@@ -3,6 +3,7 @@ package com.harmonycloud.zeus.service.middleware.impl;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.alibaba.fastjson.JSONObject;
 import com.harmonycloud.caas.common.base.BaseResult;
 import com.harmonycloud.caas.common.model.middleware.*;
 import com.harmonycloud.zeus.service.k8s.IngressService;
@@ -30,6 +31,8 @@ public class MysqlServiceImpl extends AbstractMiddlewareService implements Mysql
     private MysqlOperator mysqlOperator;
     @Autowired
     private IngressService ingressService;
+    @Autowired
+    private MiddlewareServiceImpl middlewareService;
 
     @Override
     public List<MysqlBackupDto> listBackups(String clusterId, String namespace, String middlewareName) {
@@ -75,12 +78,28 @@ public class MysqlServiceImpl extends AbstractMiddlewareService implements Mysql
     @Override
     public BaseResult queryAccessInfo(String clusterId, String namespace, String middlewareName) {
         // 获取对外访问信息
+        Middleware middleware = middlewareService.detail(clusterId, namespace, middlewareName, MiddlewareTypeEnum.MYSQL.getType());
+        JSONObject res = new JSONObject();
+        JSONObject source = queryAllAccessInfo(clusterId, namespace, middlewareName);
+        res.put("source", source);
+        MysqlDTO mysqlDTO = middleware.getMysqlDTO();
+        if (mysqlDTO != null) {
+            Boolean isSource = mysqlDTO.getIsSource();
+            if (isSource != null) {
+                JSONObject disasterRecovery = queryAllAccessInfo(mysqlDTO.getRelationClusterId(), mysqlDTO.getRelationNamespace(), mysqlDTO.getRelationName());
+                res.put("disasterRecovery", disasterRecovery);
+            }
+        }
+        return BaseResult.ok(res);
+    }
+
+    public JSONObject queryAllAccessInfo(String clusterId, String namespace, String middlewareName) {
         List<IngressDTO> ingressDTOS = ingressService.get(clusterId, namespace, MiddlewareTypeEnum.MYSQL.name(), middlewareName);
         List<IngressDTO> serviceDTOList = ingressDTOS.stream().filter(ingressDTO -> (
                 ingressDTO.getName().contains("headless") && ingressDTO.getExposeType().equals(MIDDLEWARE_EXPOSE_NODEPORT))
         ).collect(Collectors.toList());
 
-        MysqlDTO mysqlDTO = new MysqlDTO();
+        JSONObject mysqlInfo = new JSONObject();
         if (!CollectionUtils.isEmpty(serviceDTOList)) {
             IngressDTO ingressDTO = serviceDTOList.get(0);
             String exposeIP = ingressDTO.getExposeIP();
@@ -88,10 +107,10 @@ public class MysqlServiceImpl extends AbstractMiddlewareService implements Mysql
             if (!CollectionUtils.isEmpty(serviceList)) {
                 ServiceDTO serviceDTO = serviceList.get(0);
                 String exposePort = serviceDTO.getExposePort();
-                mysqlDTO.setAddress(exposeIP + ":" + exposePort);
+                mysqlInfo.put("address", exposeIP + ":" + exposePort);
             }
-            mysqlDTO.setUsername("root");
+            mysqlInfo.put("username", "root");
         }
-        return BaseResult.ok(mysqlDTO);
+        return mysqlInfo;
     }
 }
