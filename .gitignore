@@ -1,6 +1,7 @@
 HELP.md
 target/
 .target
+release/
 !.mvn/wrapper/maven-wrapper.jar
 .mvn
 mvnw
