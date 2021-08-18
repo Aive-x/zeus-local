@@ -75,13 +75,6 @@ public class ClusterCertServiceImpl implements ClusterCertService {
         // 如果token为空，需要根据证书生成token
         if (StringUtils.isBlank(cluster.getAccessToken())) {
             generateTokenByCert(cluster);
-            MiddlewareCluster middlewareCluster = clusterWrapper.get(cluster.getDcId(), cluster.getName());
-            middlewareCluster.getSpec().getInfo().setAccessToken(cluster.getAccessToken());
-            try {
-                clusterWrapper.update(middlewareCluster);
-            } catch (IOException e) {
-                log.error("集群{}的accessToken更新失败", cluster.getId());
-            }
         }
 
         // 创建cm

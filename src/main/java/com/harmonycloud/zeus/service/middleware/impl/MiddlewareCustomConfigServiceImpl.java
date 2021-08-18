@@ -326,6 +326,9 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
         JSONObject values) {
         JSONObject newValues = JSONObject.parseObject(values.toJSONString());
         JSONObject args = newValues.getJSONObject("args");
+        if (args == null) {
+            args = new JSONObject();
+        }
         for (String key : dataMap.keySet()) {
             Pattern pattern = Pattern.compile("[0-9]*");
             Matcher isNum = pattern.matcher(dataMap.get(key));
@@ -335,6 +338,7 @@ public class MiddlewareCustomConfigServiceImpl extends AbstractBaseService imple
                 args.put(key, dataMap.get(key));
             }
         }
+        newValues.put("args", args);
         helmChartService.upgrade(middleware, values, newValues, cluster);
     }
 

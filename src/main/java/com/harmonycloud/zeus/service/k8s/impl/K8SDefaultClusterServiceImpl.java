@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
 import com.harmonycloud.zeus.bean.BeanK8sDefaultCluster;
 import com.harmonycloud.zeus.dao.BeanK8sDefaultClusterMapper;
-import com.harmonycloud.zeus.service.k8s.K8sDefaultCluster;
+import com.harmonycloud.zeus.service.k8s.K8sDefaultClusterService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import java.util.List;
  */
 @Slf4j
 @Service
-public class K8sDefaultClusterImpl implements K8sDefaultCluster {
+public class K8SDefaultClusterServiceImpl implements K8sDefaultClusterService {
     
     @Autowired
     private BeanK8sDefaultClusterMapper beanK8sDefaultClusterMapper;
@@ -44,5 +44,12 @@ public class K8sDefaultClusterImpl implements K8sDefaultCluster {
         } catch (Exception e) {
             log.error("集群{}, 默认集群写入失败", cluster.getId());
         }
+    }
+
+    @Override
+    public void delete(String clusterId) {
+        QueryWrapper<BeanK8sDefaultCluster> wrapper =
+            new QueryWrapper<BeanK8sDefaultCluster>().eq("cluster_id", clusterId);
+        beanK8sDefaultClusterMapper.delete(wrapper);
     }
 }

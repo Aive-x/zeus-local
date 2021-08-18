@@ -9,13 +9,18 @@ import com.harmonycloud.caas.common.enums.middleware.StorageClassProvisionerEnum
 import com.harmonycloud.caas.common.exception.BusinessException;
 import com.harmonycloud.caas.common.exception.CaasRuntimeException;
 import com.harmonycloud.caas.common.model.middleware.*;
+import com.harmonycloud.caas.common.model.registry.HelmChartFile;
+import com.harmonycloud.caas.common.util.ThreadPoolExecutorFactory;
 import com.harmonycloud.zeus.integration.cluster.ClusterWrapper;
+import com.harmonycloud.zeus.integration.cluster.CustomResourceDefinitionWrapper;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareCluster;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareClusterInfo;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareClusterSpec;
+import com.harmonycloud.zeus.integration.registry.bean.harbor.HelmListInfo;
 import com.harmonycloud.zeus.service.k8s.*;
 import com.harmonycloud.zeus.service.log.EsComponentService;
 import com.harmonycloud.zeus.service.middleware.EsService;
+import com.harmonycloud.zeus.service.registry.HelmChartService;
 import com.harmonycloud.zeus.service.registry.RegistryService;
 import com.harmonycloud.zeus.util.K8sClient;
 import com.harmonycloud.tool.date.DateUtils;
@@ -31,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.MessageFormat;
@@ -71,9 +77,13 @@ public class ClusterServiceImpl implements ClusterService {
     @Autowired
     private ClusterService clusterService;
     @Autowired
-    private K8sDefaultCluster k8sDefaultCluster;
+    private K8sDefaultClusterService k8SDefaultClusterService;
     @Autowired
     private EsService esService;
+    @Autowired
+    private HelmChartService helmChartService;
+    @Autowired
+    private CustomResourceDefinitionWrapper crdWrapper;
 
     @Value("${k8s.component.logging.es.user:elastic}")
     private String esUser;
@@ -82,8 +92,10 @@ public class ClusterServiceImpl implements ClusterService {
     @Value("${k8s.component.logging.es.port:30092}")
     private String esPort;
 
-    @Value("${k8s.component.crd.middlewareCrdYamlPath:/usr/local/zeus-pv/middleware-crd.yaml}")
-    private String middlewareCrdYamlPath;
+    @Value("${k8s.component.helm:/usr/local/zeus-pv/components}")
+    private String ComponentsPath;
+    @Value("${k8s.component.middleware:/usr/local/zeus-pv/middleware}")
+    private String middlewarePath;
 
     @Override
     public List<MiddlewareClusterDTO> listClusters() {
@@ -199,13 +211,6 @@ public class ClusterServiceImpl implements ClusterService {
 
         // 校验registry
         registryService.validate(cluster.getRegistry());
-        
-        // 校验es
-        if (StringUtils.isNotBlank(cluster.getLogging().getElasticSearch().getHost())
-            && !esComponentService.checkEsConnection(cluster)) {
-            throw new BusinessException(DictEnum.ES_COMPONENT, cluster.getLogging().getElasticSearch().getAddress(),
-                ErrorMessage.VALIDATE_FAILED);
-        }
 
         try {
             // 先添加fabric8客户端，否则无法用fabric8调用APIServer
@@ -218,6 +223,24 @@ public class ClusterServiceImpl implements ClusterService {
             K8sClient.removeClient(cluster.getId());
             throw new BusinessException(DictEnum.CLUSTER, cluster.getName(), ErrorMessage.AUTH_FAILED);
         }
+        // 保存证书
+        try {
+            clusterCertService.saveCert(cluster);
+            // 若为第一个集群 则将clusterId, url, serviceAccount存入数据库
+            if (k8SDefaultClusterService.get() == null) {
+                k8SDefaultClusterService.create(cluster);
+            }
+        } catch (Exception e) {
+            log.error("集群{}，保存证书异常", cluster.getId(), e);
+        }
+
+        // 获取所有crd资源
+        try {
+            helmChartService.install("middleware-controller", "default",
+                ComponentsPath + File.separator + "middleware-v1.0.0.tgz", cluster);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorMessage.HELM_INSTALL_MIDDLEWARE_CONTROLLER_FAILED);
+        }
         // 保存集群
         MiddlewareCluster mw = convert(cluster);
         try {
@@ -229,29 +252,21 @@ public class ClusterServiceImpl implements ClusterService {
             log.error("集群id：{}，添加集群异常", cluster.getId());
             throw new BusinessException(DictEnum.CLUSTER, cluster.getNickname(), ErrorMessage.ADD_FAIL);
         }
-        // 保存证书
-        try {
-            clusterCertService.saveCert(cluster);
-            //若为第一个集群 则将clusterId, url, serviceAccount存入数据库
-            if (k8sDefaultCluster.get() == null){
-                k8sDefaultCluster.create(cluster);
-            }
-        } catch (Exception e) {
-            log.error("集群{}，保存证书异常", cluster.getId(), e);
-        }
-        //初始化集群模板
+
+        // 初始化集群模板
         try {
             RestHighLevelClient esClient = esService.getEsClient(cluster);
             esService.initMysqlSlowLogIndexTemplate(esClient);
             log.info("集群:{}索引模板初始化成功", cluster.getName());
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("集群:{}索引模板初始化失败", cluster.getName(), e);
         }
         // 放入map
         putIntoClusterMap(cluster);
-
-        //创建middleware crd
-        createMiddlewareCrd(cluster.getId());
+        // 创建mysql/es/redis/mq operator
+        createOperator(cluster.getId());
+        // 安装组件
+        createComponents(cluster);
     }
 
     @Override
@@ -314,12 +329,17 @@ public class ClusterServiceImpl implements ClusterService {
         Registry registry = cluster.getRegistry();
         if (registry == null || StringUtils.isAnyEmpty(registry.getProtocol(), registry.getAddress(),
             registry.getChartRepo(), registry.getUser(), registry.getPassword())) {
-            throw new IllegalArgumentException("cluster registry info is null");
+            registry = new Registry();
+            registry.setAddress("middleware.harmonycloud.cn").setProtocol("http").setPort(38080).setUser("admin")
+                .setPassword("Hc@Cloud01").setType("harbor").setChartRepo("middleware");
+            cluster.setRegistry(registry);
         }
 
         // 校验集群使用的ingress信息
         if (cluster.getIngress() == null || StringUtils.isEmpty(cluster.getIngress().getAddress())) {
-            throw new IllegalArgumentException("cluster ingress info is null");
+            MiddlewareClusterIngress ingress = new MiddlewareClusterIngress().setAddress(cluster.getHost())
+                .setIngressClassName("ingress-ingress-nginx-controller");
+            cluster.setIngress(ingress);
         }
 
         // 设置默认参数
@@ -335,13 +355,9 @@ public class ClusterServiceImpl implements ClusterService {
             cluster.getRegistry()
                 .setPort(cluster.getRegistry().getProtocol().equalsIgnoreCase(Protocol.HTTPS.getValue()) ? 443 : 80);
         }
-        // 设置imageRepo
-        if (StringUtils.isBlank(cluster.getRegistry().getImageRepo())) {
-            cluster.getRegistry().setImageRepo(cluster.getRegistry().getChartRepo());
-        }
         
         // 设置ingress
-        if (cluster.getIngress().getTcp() == null) {
+        if (cluster.getIngress() != null && cluster.getIngress().getTcp() == null) {
             cluster.getIngress().setTcp(new MiddlewareClusterIngress.IngressConfig());
         }
         
@@ -391,6 +407,7 @@ public class ClusterServiceImpl implements ClusterService {
         }
         // 从map中移除
         removeFromClusterMap(clusterId);
+        k8SDefaultClusterService.delete(clusterId);
     }
 
     private MiddlewareClusterDTO getFromClusterMap(String clusterId) {
@@ -459,8 +476,8 @@ public class ClusterServiceImpl implements ClusterService {
         return new MiddlewareCluster().setMetadata(meta).setSpec(new MiddlewareClusterSpec().setInfo(clusterInfo));
     }
 
-    private void createMiddlewareCrd(String clusterId){
-        MiddlewareClusterDTO middlewareClusterDTO = clusterService.findById(clusterId);
+    private void createMiddlewareCrd(MiddlewareClusterDTO cluster, String path){
+        //MiddlewareClusterDTO middlewareClusterDTO = clusterService.findById(clusterId);
 
         boolean error = false;
         Process process = null;
@@ -468,7 +485,7 @@ public class ClusterServiceImpl implements ClusterService {
             String execCommand;
             execCommand = MessageFormat.format(
                     "kubectl create -f {0} --server={1} --token={2} --insecure-skip-tls-verify=true",
-                    middlewareCrdYamlPath, middlewareClusterDTO.getAddress(), middlewareClusterDTO.getAccessToken());
+                    path, cluster.getAddress(), cluster.getAccessToken());
             log.info("执行kubectl命令：{}", execCommand);
             String[] commands = execCommand.split(" ");
             process = Runtime.getRuntime().exec(commands);
@@ -499,5 +516,79 @@ public class ClusterServiceImpl implements ClusterService {
         }
     }
 
+    public void createOperator(String clusterId) {
+        File file = new File(middlewarePath);
+        for (String name : file.list()) {
+            ThreadPoolExecutorFactory.executor.execute(() -> {
+                File f = new File(middlewarePath + File.separator + name);
+                if (f.getAbsolutePath().contains(".tgz")) {
+                    HelmChartFile chartFile = helmChartService.getHelmChartFromFile(null, null, f);
+                    helmChartService.createOperator(middlewarePath + File.separator, clusterId, chartFile);
+                }
+            });
+        }
+    }
+
+    public void createComponents(MiddlewareClusterDTO cluster) {
+        List<HelmListInfo> helmListInfos = helmChartService.listHelm("", "", cluster);
+        MiddlewareCluster middlewareCluster = clusterWrapper.get(cluster.getDcId(), cluster.getName());
+        // 安装local-path
+        try {
+            if (helmListInfos.stream().noneMatch(helm -> "local-path".equals(helm.getName()))) {
+                helmChartService.install("local-path", "middleware-operator",
+                    ComponentsPath + File.separator + "local-path-provisioner-0.1.0.tgz", cluster);
+            }
+        } catch (Exception e) {
+            throw new BusinessException(ErrorMessage.HELM_INSTALL_LOCAL_PATH_FAILED);
+        }
+        // 安装prometheus
+        try {
+            if (helmListInfos.stream().noneMatch(helm -> "prometheus".equals(helm.getName()))) {
+                helmChartService.install("prometheus", "default",
+                    ComponentsPath + File.separator + "prometheus-2.11.0.tgz", cluster);
+                MiddlewareClusterMonitor monitor = new MiddlewareClusterMonitor();
+                MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
+                info.setProtocol("http").setPort("31901").setHost(cluster.getHost());
+                monitor.setPrometheus(info);
+                middlewareCluster.getSpec().getInfo().setMonitor(monitor);
+            }
+        } catch (Exception e) {
+            throw new BusinessException(ErrorMessage.HELM_INSTALL_PROMETHEUS_FAILED);
+        }
+        // 安装ingress nginx
+        try {
+            if (helmListInfos.stream().noneMatch(helm -> "ingress".equals(helm.getName()))) {
+                helmChartService.install("ingress", "middleware-operator",
+                    ComponentsPath + File.separator + "ingress-nginx-0.24.1.tgz", cluster);
+            }
+        } catch (Exception e) {
+            throw new BusinessException(ErrorMessage.HELM_INSTALL_NGINX_INGRESS_FAILED);
+        }
+        // 安装grafana
+        try {
+            helmChartService.install("grafana", "monitoring", ComponentsPath + File.separator + "grafana-6.8.0.tgz",
+                cluster);
+            MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
+            info.setProtocol("http").setPort("31900").setHost(cluster.getHost());
+            middlewareCluster.getSpec().getInfo().getMonitor().setGrafana(info);
+        } catch (Exception e) {
+            log.error(ErrorMessage.HELM_INSTALL_GRAFANA_FAILED.getZhMsg());
+        }
+        // 安装alertmanager
+        try {
+            helmChartService.install("alertmanager", "monitoring",
+                ComponentsPath + File.separator + "alertmanager-1.5.1.tgz", cluster);
+            MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
+            info.setProtocol("http").setPort("9093").setHost(cluster.getHost());
+            middlewareCluster.getSpec().getInfo().getMonitor().setAlertManager(info);
+        } catch (Exception e) {
+            log.error(ErrorMessage.HELM_INSTALL_ALERT_MANAGER_FAILED.getZhMsg());
+        }
+        try {
+            clusterWrapper.update(middlewareCluster);
+        } catch (IOException e) {
+            log.error("集群{} 信息更新失败", cluster.getId());
+        }
+    }
 
 }

@@ -106,8 +106,8 @@ public abstract class AbstractBaseOperator {
             cluster = clusterService.findByIdAndCheckRegistry(middleware.getClusterId());
         }
         // 1. download and read helm chart from registry
-        HelmChartFile helmChart = helmChartService.getHelmChartFromRegistry(cluster.getRegistry(),
-            middleware.getChartName(), middleware.getChartVersion());
+        HelmChartFile helmChart =
+            helmChartService.getHelmChartFromLocal(middleware.getChartName(), middleware.getChartVersion());
 
         // 2. deal with values.yaml andChart.yaml
         // load values.yaml to map
@@ -390,9 +390,7 @@ public abstract class AbstractBaseOperator {
     }
 
     public void convertDynamicValues(Middleware middleware, JSONObject values) {
-        MiddlewareClusterDTO cluster = clusterService.findById(middleware.getClusterId());
-        HelmChartFile helm = helmChartService.getHelmChartFromRegistry(cluster.getRegistry(), middleware.getType(),
-            middleware.getChartVersion());
+        HelmChartFile helm = helmChartService.getHelmChartFromLocal(middleware.getType(), middleware.getChartVersion());
         QuestionYaml questionYaml = helmChartService.getQuestionYaml(helm);
         Map<String, String> dynamicValues = new HashMap<>();
         //解析question.yaml

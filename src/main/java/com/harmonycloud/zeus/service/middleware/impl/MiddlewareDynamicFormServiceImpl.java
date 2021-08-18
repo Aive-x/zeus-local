@@ -35,9 +35,8 @@ public class MiddlewareDynamicFormServiceImpl implements MiddlewareDynamicFormSe
 
     @Override
     public QuestionYaml dynamicForm(String clusterId, String chartName, String chartVersion) {
-        MiddlewareClusterDTO cluster = clusterService.findById(clusterId);
         HelmChartFile helmChartFile =
-            helmChartService.getHelmChartFromRegistry(cluster.getRegistry(), chartName, chartVersion);
+            helmChartService.getHelmChartFromLocal(chartName, chartVersion);
         return helmChartService.getQuestionYaml(helmChartFile);
     }
 

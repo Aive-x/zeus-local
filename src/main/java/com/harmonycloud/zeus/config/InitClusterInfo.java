@@ -1,6 +1,7 @@
 package com.harmonycloud.zeus.config;
 
 import com.harmonycloud.zeus.service.k8s.ClusterService;
+import com.harmonycloud.zeus.util.K8sClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
@@ -17,13 +18,13 @@ import org.springframework.stereotype.Component;
 public class InitClusterInfo implements ApplicationRunner {
 
     @Autowired
-    private ClusterService clusterService;
+    private K8sClient k8sClient;
 
     @Override
     public void run(ApplicationArguments args) {
         try {
             log.info("初始化集群信息");
-            clusterService.listClusters(true);
+            k8sClient.initClients();
             log.info("初始化集群信息成功");
         } catch (Exception e) {
             log.error("初始化集群信息失败", e);

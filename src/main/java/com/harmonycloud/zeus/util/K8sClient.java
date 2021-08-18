@@ -1,26 +1,23 @@
 package com.harmonycloud.zeus.util;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.harmonycloud.caas.common.exception.BusinessException;
 import com.harmonycloud.zeus.bean.BeanK8sDefaultCluster;
-import com.harmonycloud.zeus.service.k8s.K8sDefaultCluster;
+import com.harmonycloud.zeus.service.k8s.K8sDefaultClusterService;
 import com.harmonycloud.zeus.service.middleware.EsService;
 import com.harmonycloud.zeus.service.k8s.ClusterService;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.harmonycloud.caas.common.enums.ErrorMessage;
 import com.harmonycloud.caas.common.exception.CaasRuntimeException;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareClusterDTO;
 import com.harmonycloud.zeus.service.k8s.ClusterCertService;
-import com.harmonycloud.tool.file.FileUtil;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.ConfigBuilder;
@@ -51,7 +48,7 @@ public class K8sClient {
     @Autowired
     private ClusterCertService clusterCertService;
     @Autowired
-    private K8sDefaultCluster k8sDefaultCluster;
+    private K8sDefaultClusterService k8SDefaultClusterService;
     @Autowired
     private EsService esService;
 
@@ -98,7 +95,7 @@ public class K8sClient {
      * 获取默认集群信息
      */
     public KubernetesClient initDefaultClient(){
-        BeanK8sDefaultCluster defaultCluster = k8sDefaultCluster.get();
+        BeanK8sDefaultCluster defaultCluster = k8SDefaultClusterService.get();
         if (ObjectUtils.isEmpty(defaultCluster)){
             throw new BusinessException(ErrorMessage.CLUSTER_NOT_REGISTERED);
         }

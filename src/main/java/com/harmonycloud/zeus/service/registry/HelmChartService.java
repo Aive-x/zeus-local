@@ -28,6 +28,15 @@ public interface HelmChartService {
     List<V1HelmChartVersion> listHelmChartVersions(Registry registry, String chartName);
 
     /**
+     *从本地获取chart包并解析文件
+     *
+     * @param chartName    chart名称
+     * @param chartVersion chart版本
+     * @return
+     */
+    HelmChartFile getHelmChartFromLocal(String chartName, String chartVersion);
+
+    /**
      * 下载chart包并解析文件
      *
      * @param registry     制品服务信息
@@ -143,6 +152,16 @@ public interface HelmChartService {
     void install(String name, String namespace, String chartName, String chartVersion, String tgzFilePath, MiddlewareClusterDTO cluster);
 
     /**
+     * 发布helm chart包
+     *
+     * @param name          helm发布的实例名称
+     * @param namespace     命名空间
+     * @param tgzFilePath   tgz文件的绝对路径（包含文件名）
+     * @param cluster       集群信息
+     */
+    void install(String name, String namespace, String tgzFilePath, MiddlewareClusterDTO cluster);
+
+    /**
      * 更新已发布的helm chart
      *
      * @param middleware   中间件信息
@@ -207,6 +226,15 @@ public interface HelmChartService {
      * @param clusterId 集群id
      * @param operatorChartPath chart包位置
      */
-    void editOperatorChart(String clusterId, String operatorChartPath, String name);
+    void editOperatorChart(String clusterId, String operatorChartPath);
+
+    /**
+     * 创建operator
+     *
+     * @param chartPath helm chart包路径
+     * @param clusterId 集群id
+     * @param helmChartFile chart包对象
+     */
+    void createOperator(String chartPath, String clusterId, HelmChartFile helmChartFile);
 
 }
