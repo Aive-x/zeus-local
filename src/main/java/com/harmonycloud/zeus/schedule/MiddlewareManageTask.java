@@ -27,7 +27,7 @@ public class MiddlewareManageTask {
      * @param cluster    集群
      * @param operator   operator实现
      */
-    @Async("singleThreadExecutor")
+    @Async("taskExecutor")
     public void asyncCreate(Middleware middleware, MiddlewareClusterDTO cluster, BaseOperator operator) {
         operator.create(middleware, cluster);
     }
@@ -54,25 +54,5 @@ public class MiddlewareManageTask {
     @Async("taskExecutor")
     public void asyncSwitch(Middleware middleware, BaseOperator operator) {
         operator.switchMiddleware(middleware);
-    }
-
-    /**
-     * 异步创建NodePort对外服务
-     * @param middleware 中间件信息
-     * @param mysqlOperator mysqlOperator
-     */
-    @Async("singleThreadExecutor")
-    public void asyncCreateNodePortService(Middleware middleware, MysqlOperatorImpl mysqlOperator, String serviceType){
-        mysqlOperator.createOpenService(middleware, serviceType);
-    }
-
-    /**
-     * 异步创建mysql源实例和灾备实例关联关系
-     * @param middleware 中间件信息
-     * @param mysqlOperator mysqlOperator
-     */
-    @Async("singleThreadExecutor")
-    public void asyncCreateMysqlReplicate(Middleware middleware,Middleware disasterRecovery, MysqlOperatorImpl mysqlOperator){
-        mysqlOperator.createMysqlReplicate(middleware, disasterRecovery);
     }
 }

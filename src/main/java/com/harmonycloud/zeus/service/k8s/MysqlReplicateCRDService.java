@@ -16,7 +16,14 @@ public interface MysqlReplicateCRDService {
      * @param clusterId 灾备实例集群id
      * @param mysqlReplicateCRD mysql复制关系
      */
-    void createOrReplaceMysqlReplicate(String clusterId, MysqlReplicateCRD mysqlReplicateCRD) throws IOException;
+    void createMysqlReplicate(String clusterId, MysqlReplicateCRD mysqlReplicateCRD) throws IOException;
+
+    /**
+     * 修改mysql源实例和灾备实例的复制关系
+     * @param clusterId 灾备实例集群id
+     * @param mysqlReplicateCRD mysql复制关系
+     */
+    void replaceMysqlReplicate(String clusterId, MysqlReplicateCRD mysqlReplicateCRD) throws IOException;
 
     /**
      * 删除mysql源实例和灾备实例的复制关系

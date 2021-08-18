@@ -22,8 +22,13 @@ public class MysqlReplicateCRDServiceImpl implements MysqlReplicateCRDService {
     private MysqlReplicateWrapper mysqlReplicateWrapper;
 
     @Override
-    public void createOrReplaceMysqlReplicate(String clusterId, MysqlReplicateCRD mysqlReplicateCRD) throws IOException {
-        mysqlReplicateWrapper.createOrReplace(clusterId, mysqlReplicateCRD);
+    public void createMysqlReplicate(String clusterId, MysqlReplicateCRD mysqlReplicateCRD) throws IOException {
+        mysqlReplicateWrapper.create(clusterId, mysqlReplicateCRD);
+    }
+
+    @Override
+    public void replaceMysqlReplicate(String clusterId, MysqlReplicateCRD mysqlReplicateCRD) throws IOException {
+        mysqlReplicateWrapper.replace(clusterId, mysqlReplicateCRD);
     }
 
     @Override

@@ -175,7 +175,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
     public void create(Middleware middleware, MiddlewareClusterDTO cluster) {
         super.create(middleware, cluster);
         // 将headless服务通过NodePort对外暴露
-        middlewareManageTask.asyncCreateNodePortService(middleware, this, "headless");
+        this.createOpenService(middleware, "headless");
         // 创建灾备实例
         this.createDisasterRecoveryMiddleware(middleware);
     }
@@ -558,8 +558,13 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
     @Override
     public void switchDisasterRecovery(String clusterId, String namespace, String middlewareName) throws Exception {
         MysqlReplicateCRD mysqlReplicate = mysqlReplicateCRDService.getMysqlReplicate(clusterId, namespace, middlewareName);
-        mysqlReplicate.getSpec().setEnable(false);
-        mysqlReplicateCRDService.createOrReplaceMysqlReplicate(clusterId, mysqlReplicate);
+        if (mysqlReplicate != null) {
+            log.info("开始切换灾备实例,clusterId={}, namespace={}, middlewareName={}", clusterId, namespace, middlewareName);
+            mysqlReplicate.getSpec().setEnable(false);
+            mysqlReplicateCRDService.replaceMysqlReplicate(clusterId, mysqlReplicate);
+        } else {
+            log.info("该实例不存在灾备实例");
+        }
     }
 
     /**
@@ -570,7 +575,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         MysqlDTO mysqlDTO = middleware.getMysqlDTO();
         if (mysqlDTO.getOpenDisasterRecoveryMode() != null && mysqlDTO.getOpenDisasterRecoveryMode() && mysqlDTO.getIsSource()) {
             //1.为实例创建只读对外服务(NodePort)
-            middlewareManageTask.asyncCreateNodePortService(middleware, this, "readonly");
+            this.createOpenService(middleware,  "readonly");
             //2.设置灾备实例信息，创建灾备实例
             //2.1 设置灾备实例信息
             Middleware relationMiddleware = middleware.getRelationMiddleware();
@@ -594,9 +599,9 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
             BaseOperator operator = middlewareService.getOperator(BaseOperator.class, BaseOperator.class, relationMiddleware);
             MiddlewareClusterDTO cluster = clusterService.findByIdAndCheckRegistry(relationMiddleware.getClusterId());
             operator.createPreCheck(relationMiddleware, cluster);
-            middlewareManageTask.asyncCreate(relationMiddleware, cluster, operator);
+            this.create(relationMiddleware, cluster);
             //3.异步创建关联关系
-            middlewareManageTask.asyncCreateMysqlReplicate(middleware, relationMiddleware, this);
+            this.createMysqlReplicate(middleware, relationMiddleware);
         }
     }
 
@@ -680,7 +685,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
 
                     try {
                         log.info("创建mysql实例 {} 和 {} 的关联关系MysqlReplicate", original.getName(), middleware.getName());
-                        mysqlReplicateCRDService.createOrReplaceMysqlReplicate(disasterRecovery.getClusterId(), mysqlReplicateCRD);
+                        mysqlReplicateCRDService.createMysqlReplicate(disasterRecovery.getClusterId(), mysqlReplicateCRD);
                         log.info("MysqlReplicate创建成功");
                     } catch (IOException e) {
                         log.error("MysqlReplicate创建失败", e);

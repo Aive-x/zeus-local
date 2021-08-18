@@ -42,7 +42,7 @@ public class ExecutorConfig {
         // 最大线程数
         executor.setMaxPoolSize(1);
         // 设置队列容量
-        executor.setQueueCapacity(16);
+        executor.setQueueCapacity(64);
         // 设置线程活跃时间(秒)
         executor.setKeepAliveSeconds(60);
         // 设置默认线程名称

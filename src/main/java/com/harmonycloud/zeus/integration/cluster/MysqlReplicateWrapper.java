@@ -31,10 +31,18 @@ public class MysqlReplicateWrapper {
             .build();
 
     /**
-     * 创建或替换mysql复制
+     * 创建mysql复制
      */
-    public void createOrReplace(String clusterId, MysqlReplicateCRD mysqlReplicateCRD) throws IOException {
+    public void create(String clusterId, MysqlReplicateCRD mysqlReplicateCRD) throws IOException {
         K8sClient.getClient(clusterId).customResource(CONTEXT).create(mysqlReplicateCRD.getMetadata().getNamespace(),
+                JSONObject.parseObject(JSONObject.toJSONString(mysqlReplicateCRD)));
+    }
+
+    /**
+     * 替换mysql复制
+     */
+    public void replace(String clusterId, MysqlReplicateCRD mysqlReplicateCRD) throws IOException {
+        K8sClient.getClient(clusterId).customResource(CONTEXT).createOrReplace(mysqlReplicateCRD.getMetadata().getNamespace(),
                 JSONObject.parseObject(JSONObject.toJSONString(mysqlReplicateCRD)));
     }
 
