@@ -163,6 +163,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 }
                 if (mysqlReplicate != null) {
                     mysqlDTO.setPhase(mysqlReplicate.getStatus().getPhase());
+                    mysqlDTO.setCanSwitch(mysqlReplicate.getSpec().isEnable());
                     //mysqlDTO.setLastUpdateTime(mysqlReplicate.getStatus().getSlaves().get(0).getLastSuccessTime());
                 }
             }
@@ -205,6 +206,17 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         // 修改密码
         if (StringUtils.isNotBlank(middleware.getPassword())) {
             sb.append("mysqlArgs.root_password=").append(middleware.getPassword()).append(",");
+        }
+
+        // 修改关联实例信息
+        MysqlDTO mysqlDTO = middleware.getMysqlDTO();
+        if (mysqlDTO != null && mysqlDTO.getOpenDisasterRecoveryMode() != null) {
+            if (mysqlDTO.getOpenDisasterRecoveryMode()) {
+                sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.IS_SOURCE, mysqlDTO.getIsSource()));
+                sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_CLUSTER_ID, mysqlDTO.getRelationClusterId()));
+                sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAMESPACE, mysqlDTO.getRelationNamespace()));
+                sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAME, mysqlDTO.getRelationName()));
+            }
         }
 
         // 没有修改，直接返回
@@ -557,13 +569,46 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
 
     @Override
     public void switchDisasterRecovery(String clusterId, String namespace, String middlewareName) throws Exception {
-        MysqlReplicateCRD mysqlReplicate = mysqlReplicateCRDService.getMysqlReplicate(clusterId, namespace, middlewareName);
-        if (mysqlReplicate != null) {
-            log.info("开始切换灾备实例,clusterId={}, namespace={}, middlewareName={}", clusterId, namespace, middlewareName);
-            mysqlReplicate.getSpec().setEnable(false);
-            mysqlReplicateCRDService.replaceMysqlReplicate(clusterId, mysqlReplicate);
-        } else {
-            log.info("该实例不存在灾备实例");
+        Middleware middleware = middlewareService.detail(clusterId, namespace, middlewareName, MiddlewareTypeEnum.MYSQL.getType());
+        middleware.setClusterId(clusterId);
+        middleware.setChartName(MiddlewareTypeEnum.MYSQL.getType());
+        MysqlDTO mysqlDTO = middleware.getMysqlDTO();
+        if (mysqlDTO != null) {
+            Boolean isSource = mysqlDTO.getIsSource();
+            if (isSource != null) {
+                String relationClusterId = mysqlDTO.getRelationClusterId();
+                String relationNamespace = mysqlDTO.getRelationNamespace();
+                String relationName = mysqlDTO.getRelationName();
+                MiddlewareClusterDTO middlewareClusterDTO = clusterService.findById(clusterId);
+                mysqlDTO.setIsSource(!isSource);
+                mysqlDTO.setOpenDisasterRecoveryMode(false);
+                update(middleware, middlewareClusterDTO);
+
+                Middleware disasterRecovery = middlewareService.detail(relationClusterId, relationNamespace, relationName, MiddlewareTypeEnum.MYSQL.getType());
+                disasterRecovery.setChartName(MiddlewareTypeEnum.MYSQL.getType());
+                disasterRecovery.setClusterId(relationClusterId);
+                MysqlDTO disasterRecoveryMysqlDTO = disasterRecovery.getMysqlDTO();
+                disasterRecoveryMysqlDTO.setIsSource(isSource);
+                disasterRecoveryMysqlDTO.setOpenDisasterRecoveryMode(false);
+                MiddlewareClusterDTO disasterRecoveryMiddlewareClusterDTO = clusterService.findById(relationClusterId);
+                update(disasterRecovery, disasterRecoveryMiddlewareClusterDTO);
+
+                MysqlReplicateCRD mysqlReplicate;
+                if (isSource) {
+                    mysqlReplicate = mysqlReplicateCRDService.getMysqlReplicate(relationClusterId, relationNamespace, relationName);
+                } else {
+                    mysqlReplicate = mysqlReplicateCRDService.getMysqlReplicate(clusterId, namespace, middlewareName);
+                }
+
+                if (mysqlReplicate != null) {
+                    log.info("开始关闭灾备复制,clusterId={}, namespace={}, middlewareName={}", clusterId, namespace, middlewareName);
+                    mysqlReplicate.getSpec().setEnable(false);
+                    mysqlReplicateCRDService.replaceMysqlReplicate(clusterId, mysqlReplicate);
+                    log.info("成功关闭灾备复制");
+                } else {
+                    log.info("该实例不存在灾备实例");
+                }
+            }
         }
     }
 
