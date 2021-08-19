@@ -14,7 +14,7 @@ spec:
         app: zeus-ui
     spec:
       containers:
-        - image: 10.1.11.79:8080/middleware/zeus-ui:v1.2.0
+        - image: 10.1.11.79:8080/middleware/zeus-ui:v0.0.1
           imagePullPolicy: Always
           name: zeus-ui
           ports:

@@ -21,9 +21,9 @@ if [ DEPLOY_TYPE == "kubernetes" ]; then
     deploy_kubernetes()
 fi
 
-
 function deploy_docker() {
-  docker-compose -f deploy/docker-compose/zeus.yaml up -d
+  cd deploy/docker-compose/
+  docker-compose -f zeus.yaml up -d
 }
 
 function deploy_kubernetes() {
