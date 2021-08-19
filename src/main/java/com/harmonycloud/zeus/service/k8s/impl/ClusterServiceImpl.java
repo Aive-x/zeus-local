@@ -20,6 +20,8 @@ import com.harmonycloud.zeus.integration.registry.bean.harbor.HelmListInfo;
 import com.harmonycloud.zeus.service.k8s.*;
 import com.harmonycloud.zeus.service.log.EsComponentService;
 import com.harmonycloud.zeus.service.middleware.EsService;
+import com.harmonycloud.zeus.service.middleware.MiddlewareInfoService;
+import com.harmonycloud.zeus.service.registry.HelmChartService;
 import com.harmonycloud.zeus.service.registry.HelmChartService;
 import com.harmonycloud.zeus.service.registry.RegistryService;
 import com.harmonycloud.zeus.util.K8sClient;
@@ -75,15 +77,13 @@ public class ClusterServiceImpl implements ClusterService {
     @Autowired
     private EsComponentService esComponentService;
     @Autowired
-    private ClusterService clusterService;
-    @Autowired
     private K8sDefaultClusterService k8SDefaultClusterService;
     @Autowired
     private EsService esService;
     @Autowired
     private HelmChartService helmChartService;
     @Autowired
-    private CustomResourceDefinitionWrapper crdWrapper;
+    private MiddlewareInfoService middlewareInfoService;
 
     @Value("${k8s.component.logging.es.user:elastic}")
     private String esUser;
@@ -234,10 +234,13 @@ public class ClusterServiceImpl implements ClusterService {
             log.error("集群{}，保存证书异常", cluster.getId(), e);
         }
 
-        // 获取所有crd资源
+        // 安装middleware-controller
         try {
-            helmChartService.install("middleware-controller", "default",
-                ComponentsPath + File.separator + "middleware-v1.0.0.tgz", cluster);
+            List<HelmListInfo> helmInfos = helmChartService.listHelm("", "", cluster);
+            if (helmInfos.stream().noneMatch(info -> "middleware-controller".equals(info.getName()))) {
+                helmChartService.install("middleware-controller", "default",
+                    ComponentsPath + File.separator + "middleware-v1.0.0.tgz", cluster);
+            }
         } catch (Exception e) {
             throw new BusinessException(ErrorMessage.HELM_INSTALL_MIDDLEWARE_CONTROLLER_FAILED);
         }
@@ -262,7 +265,7 @@ public class ClusterServiceImpl implements ClusterService {
         }
         // 放入map
         putIntoClusterMap(cluster);
-        // 创建mysql/es/redis/mq operator
+        // 创建mysql/es/redis/mq operator 并添加进数据库
         createOperator(cluster.getId());
         // 安装组件
         createComponents(cluster);
