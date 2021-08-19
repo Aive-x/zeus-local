@@ -73,7 +73,7 @@ public class HelmChartServiceImpl extends AbstractRegistryService implements Hel
 
     @Value("${system.upload.path:/usr/local/zeus-pv/upload}")
     private String uploadPath;
-    @Value("${k8s.component.middleware:/usr/local/zeus/pv/middleware}")
+    @Value("${k8s.component.middleware:/usr/local/zeus-pv/middleware}")
     private String middlewarePath;
 
     @Override
@@ -533,7 +533,7 @@ public class HelmChartServiceImpl extends AbstractRegistryService implements Hel
                 return;
             }
             // 获取地址
-            String path = tempDirPath + helmChartFile.getTarFileName()
+            String path = tempDirPath + File.separator + helmChartFile.getTarFileName()
                     + helmChartFile.getDependency().get("repository").substring(8);
             File operatorDir = new File(path);
             if (operatorDir.exists()) {

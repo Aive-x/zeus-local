@@ -1,6 +1,7 @@
 package com.harmonycloud.zeus.service.middleware;
 
 import com.harmonycloud.caas.common.model.middleware.MiddlewareInfoDTO;
+import com.harmonycloud.caas.common.model.registry.HelmChartFile;
 import com.harmonycloud.zeus.bean.BeanMiddlewareInfo;
 
 import java.util.List;
@@ -36,5 +37,12 @@ public interface MiddlewareInfoService {
      * @param middlewareInfo 中间件内容
      */
     void update(BeanMiddlewareInfo middlewareInfo);
+
+    /**
+     * 添加中间件信息
+     *
+     * @param helmChartFile 中间件内容
+     */
+    void insert(HelmChartFile helmChartFile, String path, String clusterId);
 
 }

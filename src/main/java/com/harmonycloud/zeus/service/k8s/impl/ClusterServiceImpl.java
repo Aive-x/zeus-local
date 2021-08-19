@@ -1,5 +1,24 @@
 package com.harmonycloud.zeus.service.k8s.impl;
 
+import static com.harmonycloud.caas.common.constants.NameConstant.*;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.SerializationUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
 import com.alibaba.fastjson.JSONObject;
 import com.harmonycloud.caas.common.enums.DictEnum;
 import com.harmonycloud.caas.common.enums.ErrorCodeMessage;
@@ -11,8 +30,8 @@ import com.harmonycloud.caas.common.exception.CaasRuntimeException;
 import com.harmonycloud.caas.common.model.middleware.*;
 import com.harmonycloud.caas.common.model.registry.HelmChartFile;
 import com.harmonycloud.caas.common.util.ThreadPoolExecutorFactory;
+import com.harmonycloud.tool.date.DateUtils;
 import com.harmonycloud.zeus.integration.cluster.ClusterWrapper;
-import com.harmonycloud.zeus.integration.cluster.CustomResourceDefinitionWrapper;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareCluster;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareClusterInfo;
 import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareClusterSpec;
@@ -22,31 +41,11 @@ import com.harmonycloud.zeus.service.log.EsComponentService;
 import com.harmonycloud.zeus.service.middleware.EsService;
 import com.harmonycloud.zeus.service.middleware.MiddlewareInfoService;
 import com.harmonycloud.zeus.service.registry.HelmChartService;
-import com.harmonycloud.zeus.service.registry.HelmChartService;
 import com.harmonycloud.zeus.service.registry.RegistryService;
 import com.harmonycloud.zeus.util.K8sClient;
-import com.harmonycloud.tool.date.DateUtils;
+
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.SerializationUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.text.MessageFormat;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import static com.harmonycloud.caas.common.constants.NameConstant.*;
 
 /**
  * @author dengyulong
@@ -341,6 +340,10 @@ public class ClusterServiceImpl implements ClusterService {
         if (cluster.getIngress() == null || StringUtils.isEmpty(cluster.getIngress().getAddress())) {
             MiddlewareClusterIngress ingress = new MiddlewareClusterIngress().setAddress(cluster.getHost())
                 .setIngressClassName("ingress-ingress-nginx-controller");
+            MiddlewareClusterIngress.IngressConfig config = new MiddlewareClusterIngress.IngressConfig();
+            config.setEnabled(true).setNamespace("middleware-operator")
+                .setConfigMapName("ingress-ingress-nginx-system-expose-nginx-config-tcp");
+            ingress.setTcp(config);
             cluster.setIngress(ingress);
         }
 
@@ -525,7 +528,8 @@ public class ClusterServiceImpl implements ClusterService {
                 File f = new File(middlewarePath + File.separator + name);
                 if (f.getAbsolutePath().contains(".tgz")) {
                     HelmChartFile chartFile = helmChartService.getHelmChartFromFile(null, null, f);
-                    helmChartService.createOperator(middlewarePath + File.separator, clusterId, chartFile);
+                    helmChartService.createOperator(middlewarePath, clusterId, chartFile);
+                    middlewareInfoService.insert(chartFile, middlewarePath, clusterId);
                 }
             });
         }
@@ -550,7 +554,7 @@ public class ClusterServiceImpl implements ClusterService {
                     ComponentsPath + File.separator + "prometheus-2.11.0.tgz", cluster);
                 MiddlewareClusterMonitor monitor = new MiddlewareClusterMonitor();
                 MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
-                info.setProtocol("http").setPort("31901").setHost(cluster.getHost());
+                info.setProtocol("http").setPort("9090").setHost("prometheus-svc.monitoring");
                 monitor.setPrometheus(info);
                 middlewareCluster.getSpec().getInfo().setMonitor(monitor);
             }
@@ -571,7 +575,8 @@ public class ClusterServiceImpl implements ClusterService {
             helmChartService.install("grafana", "monitoring", ComponentsPath + File.separator + "grafana-6.8.0.tgz",
                 cluster);
             MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
-            info.setProtocol("http").setPort("31900").setHost(cluster.getHost());
+            info.setProtocol("http").setPort("31900").setHost("grafana.monitoring").setToken(
+                "eyJhbGciOiJSUzI1NiIsImtpZCI6ImxNRlk4dEk2QlktYzJNUEZRem9kLUVDUnprMkFXRG5LTDZ0c2tZTDFBWjgifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLTdtcWpkIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJlNDFmMWMzMy02YWIxLTQ5NzktODMwYS1kNjU2M2ZlYTE4ZTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06YWRtaW4tdXNlciJ9.byMKYjzw-eXurnHJGjPEO1PJoH_cdFs-zEM9T5fEzKUIi1nBUF-rYXi-rHI1vq27mwzL3lVrbkGQxO0ckHndg-6x3dOdjtxF5xXLARbkT1mYnFiTAsC2AyS4GJPkCsjz8q902AxgQ5jtrWIjZjYcKNsOqSwNKBrw2JS5zTRS-ELYQuu21iIZnobHy51pVzkdZxT6IhrD6ONaaxloBp4VaOBh9kzCX4YnJGr3yzd14iuJA3X1LUrvgEthm_kSC9ql4g6DuCY4wbZOVMimPTwh6cJzSPm4Er653JMGSZDc5M2_4sTetmCLYhiwdHBVGMj0NHyqjRIBq7t4zGNp_3B4iA");
             middlewareCluster.getSpec().getInfo().getMonitor().setGrafana(info);
         } catch (Exception e) {
             log.error(ErrorMessage.HELM_INSTALL_GRAFANA_FAILED.getZhMsg());
@@ -581,7 +586,7 @@ public class ClusterServiceImpl implements ClusterService {
             helmChartService.install("alertmanager", "monitoring",
                 ComponentsPath + File.separator + "alertmanager-1.5.1.tgz", cluster);
             MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
-            info.setProtocol("http").setPort("9093").setHost(cluster.getHost());
+            info.setProtocol("http").setPort("9093").setHost("alertmanager.monitoring");
             middlewareCluster.getSpec().getInfo().getMonitor().setAlertManager(info);
         } catch (Exception e) {
             log.error(ErrorMessage.HELM_INSTALL_ALERT_MANAGER_FAILED.getZhMsg());
