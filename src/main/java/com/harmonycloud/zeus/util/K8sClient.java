@@ -140,8 +140,7 @@ public class K8sClient {
 
             //创建es模板
             try {
-                RestHighLevelClient esClient = esService.getEsClient(c);
-                esService.initMysqlSlowLogIndexTemplate(esClient);
+                esService.initEsIndexTemplate();
                 log.info("集群:{}索引模板初始化成功", c.getName());
             } catch (Exception e) {
                 log.error("集群:{}索引模板初始化失败", c.getName(), e);

@@ -81,13 +81,13 @@ public class MysqlServiceImpl extends AbstractMiddlewareService implements Mysql
         Middleware middleware = middlewareService.detail(clusterId, namespace, middlewareName, MiddlewareTypeEnum.MYSQL.getType());
         JSONObject res = new JSONObject();
         JSONObject source = queryAllAccessInfo(clusterId, namespace, middlewareName);
-        res.put("source", source);
         MysqlDTO mysqlDTO = middleware.getMysqlDTO();
         if (mysqlDTO != null) {
             Boolean isSource = mysqlDTO.getIsSource();
+            res.put(getInstanceType(isSource), source);
             if (isSource != null) {
-                JSONObject disasterRecovery = queryAllAccessInfo(mysqlDTO.getRelationClusterId(), mysqlDTO.getRelationNamespace(), mysqlDTO.getRelationName());
-                res.put("disasterRecovery", disasterRecovery);
+                JSONObject relation = queryAllAccessInfo(mysqlDTO.getRelationClusterId(), mysqlDTO.getRelationNamespace(), mysqlDTO.getRelationName());
+                res.put(getInstanceType(!isSource), relation);
             }
         }
         return BaseResult.ok(res);
@@ -113,4 +113,18 @@ public class MysqlServiceImpl extends AbstractMiddlewareService implements Mysql
         }
         return mysqlInfo;
     }
+
+    /**
+     * 查询实例类型(是源实例还是灾备实例)
+     * @param isSource
+     * @return
+     */
+    public String getInstanceType(Boolean isSource) {
+        if (isSource == null || isSource) {
+            return "source";
+        } else {
+            return "disasterRecovery";
+        }
+    }
+
 }

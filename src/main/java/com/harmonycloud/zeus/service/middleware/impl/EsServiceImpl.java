@@ -7,14 +7,16 @@ import com.harmonycloud.caas.common.constants.CoreConstant;
 import com.harmonycloud.caas.common.enums.DateType;
 import com.harmonycloud.caas.common.enums.DictEnum;
 import com.harmonycloud.caas.common.enums.ErrorMessage;
+import com.harmonycloud.caas.common.enums.EsTemplateEnum;
 import com.harmonycloud.caas.common.exception.BusinessException;
 import com.harmonycloud.caas.common.model.middleware.*;
-import com.harmonycloud.zeus.service.k8s.ClusterService;
-import com.harmonycloud.zeus.util.EsTemplateEnum;
 import com.harmonycloud.tool.api.client.ElasticSearchClient;
 import com.harmonycloud.tool.date.DateUtils;
 import com.harmonycloud.tool.json.JsonUtil;
 import com.harmonycloud.tool.page.PageObject;
+import com.harmonycloud.zeus.service.k8s.ClusterService;
+import com.harmonycloud.zeus.service.middleware.AbstractMiddlewareService;
+import com.harmonycloud.zeus.service.middleware.EsService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.util.EntityUtils;
@@ -44,9 +46,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.harmonycloud.zeus.service.middleware.AbstractMiddlewareService;
-import com.harmonycloud.zeus.service.middleware.EsService;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
@@ -63,11 +62,11 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
 
     private Map<String, List<String>> indexMap = new ConcurrentHashMap<>();
 
-    @Value("${elasticsearch.index.prefix:logstash-}")
+    @Value("${elasticsearch.index.prefix:middlewarelogstash-}")
     private String esIndexPrefix;
     @Value("${elasticsearch.cluster-name:kubernetes-logging}")
     private String esClusterName;
-    @Value("${elasticsearch.pod.index.prefix:stdout-}")
+    @Value("${elasticsearch.pod.index.prefix:middlewarestdout-}")
     private String esPodIndexPrefix;
 
     private Map<String, RestHighLevelClient> esClients = new ConcurrentHashMap<>();
@@ -411,9 +410,11 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
             RestHighLevelClient esClient = getEsClient(cluster);
             try {
                 //初始化mysql慢日志模板
-                initMysqlSlowLogIndexTemplate(esClient);
-                //初始化操作审计模板
-                //initAuditIndexTemplete(esClient);
+                initMysqlSlowLogIndexTemplete(esClient);
+                //初始化标准输入日志索引模板
+                initStdoutIndexTemplete(esClient);
+                //初始化文件日志索引模板
+                initLogstashIndexTemplete(esClient);
                 log.info("集群:{}索引模板初始化成功", cluster.getName());
             } catch (Exception e) {
                 e.printStackTrace();
@@ -429,8 +430,7 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
      * @date 2021/7/20 3:56 下午
      * @param esClient
      */
-    @Override
-    public void initMysqlSlowLogIndexTemplate(RestHighLevelClient esClient){
+    public void initMysqlSlowLogIndexTemplete(RestHighLevelClient esClient){
         try {
             PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.MYSQL_SLOW_LOG.getName());
             JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.MYSQL_SLOW_LOG.getCode());
@@ -453,7 +453,6 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
         try {
             PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.AUDIT.getName());
 
-            String s = EsTemplateEnum.AUDIT.getCode();
             JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.AUDIT.getCode());
             setCommonTemplete(request, codeJson);
             JSONObject mappings = codeJson.getJSONObject("mappings").getJSONObject("user_op_audit");
@@ -463,6 +462,51 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
             log.info("操作审计索引模板初始化成功");
         } catch (IOException e) {
             log.error("操作审计索引模板初始化失败", e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 初始化标准输出日志索引模板
+     * @author liyinlong
+     * @date 2021/8/11 4:54 下午
+     * @param esClient
+     */
+    public void initStdoutIndexTemplete(RestHighLevelClient esClient){
+        try {
+            PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.STDOUT.getName());
+
+            JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.STDOUT.getCode());
+            setCommonTemplete(request, codeJson);
+            JSONObject mappings = codeJson.getJSONObject("mappings").getJSONObject("doc");
+            request.mapping(mappings.toString(), XContentType.JSON);
+
+            esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
+            log.info("标准输出日志索引模板初始化成功");
+        } catch (IOException e) {
+            log.error("标准输出日志索引模板初始化失败", e);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 初始化文件日志索引模板
+     * @author liyinlong
+     * @date 2021/8/11 4:58 下午
+     * @param esClient
+     */
+    public void initLogstashIndexTemplete(RestHighLevelClient esClient){
+        try {
+            PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.LOG_STASH.getName());
+
+            JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.LOG_STASH.getCode());
+            setCommonTemplete(request, codeJson);
+            JSONObject mappings = codeJson.getJSONObject("mappings").getJSONObject("doc");
+            request.mapping(mappings.toString(), XContentType.JSON);
+            esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
+            log.info("文件日志索引模板logstash初始化成功");
+        } catch (IOException e) {
+            log.error("文件日志索引模板logstash初始化失败", e);
             e.printStackTrace();
         }
     }
@@ -483,5 +527,4 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
         request.patterns(list);
         request.order(codeJson.getIntValue("order"));
     }
-
 }

@@ -255,8 +255,7 @@ public class ClusterServiceImpl implements ClusterService {
 
         // 初始化集群模板
         try {
-            RestHighLevelClient esClient = esService.getEsClient(cluster);
-            esService.initMysqlSlowLogIndexTemplate(esClient);
+            esService.initEsIndexTemplate();
             log.info("集群:{}索引模板初始化成功", cluster.getName());
         } catch (Exception e) {
             log.error("集群:{}索引模板初始化失败", cluster.getName(), e);
