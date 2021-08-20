@@ -120,34 +120,10 @@ CREATE TABLE `middleware_info` (
 -- Records of middleware_info
 -- ----------------------------
 BEGIN;
-INSERT INTO `middleware_info` VALUES (1, 'Mysql', '关系型数据库管理系统', 'Database', '8.0.21', 0x6D7973716C2E706E67, 'mysql.png', 1, 'mysql', '5.7.21', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
-INSERT INTO `middleware_info` VALUES (2, 'Redis', '开源的可基于内存亦可持久化的Key-Value数据库', 'Database', '5.0.8', 0x72656469732E706E67, 'redis.png', 1, 'redis', '5.0.8', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
-INSERT INTO `middleware_info` VALUES (3, 'Elasticsearch', '基于Lucene的搜索服务器', 'Database', '6.8.10', 0x656C61737469632E706E67, 'elastic.png', 1, 'elasticsearch', '6.8.10-1', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
-INSERT INTO `middleware_info` VALUES (4, 'RocketMQ', '阿里巴巴开源的消息中间件', 'MQ', '4.1.0', 0x726F636B65746D712E706E67, 'rocketmq.png', 1, 'rocketmq', '4.1.0', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
-COMMIT;
-
--- ----------------------------
--- Table structure for system_config
--- ----------------------------
-DROP TABLE IF EXISTS `system_config`;
-CREATE TABLE `system_config` (
-  `id` int NOT NULL AUTO_INCREMENT COMMENT 'id',
-  `config_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '配置名',
-  `config_value` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '配置值',
-  `config_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '配置类型',
-  `create_user` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '创建人',
-  `update_user` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '修改人',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `config_name` (`config_name`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=COMPACT COMMENT='系统配置表';
-
--- ----------------------------
--- Records of system_config
--- ----------------------------
-BEGIN;
-INSERT INTO `system_config` VALUES (3, 'license', 'XiDVUBn+YqKL9MwlPkyvyogbN4R3lqblGO/wIzwJES2zsLTd0DBadbxFxtiZ2yDm+wrM0cTUIsGik/xz6PnXvO+JMA1Wx6JiBmsdTKd9il2DKexzc6TQzJYiMxhp78asRX8D5YBqqa9VHgCds/+GCSJS5a+UQcFK7X38bjOfkLA=', 'license', NULL, NULL, '2021-08-04 10:46:35', NULL);
+INSERT INTO `middleware_info` VALUES (1, 'Mysql', '关系型数据库管理系统', 'Database', '8.0.21', 0x6D7973716C2E706E67, 'mysql-1.1.0-alpha.svg', 1, 'mysql', '1.1.0-alpha', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
+INSERT INTO `middleware_info` VALUES (2, 'Redis', '开源的可基于内存亦可持久化的Key-Value数据库', 'Database', '5.0.8', 0x72656469732E706E67, 'redis-5.0.8.svg', 1, 'redis', '5.0.8', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
+INSERT INTO `middleware_info` VALUES (3, 'Elasticsearch', '基于Lucene的搜索服务器', 'Database', '6.8.10', 0x656C61737469632E706E67, 'elasticsearch-6.8.10-1.svg', 1, 'elasticsearch', '6.8.10-1', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
+INSERT INTO `middleware_info` VALUES (4, 'RocketMQ', '阿里巴巴开源的消息中间件', 'MQ', '4.1.0', 0x726F636B65746D712E706E67, 'rocketmq-4.1.0.svg', 1, 'rocketmq', '4.1.0', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
 COMMIT;
 
 -- ----------------------------
@@ -313,7 +289,7 @@ CREATE TABLE `role_user` (
   `username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '用户名',
   `role_id` int(11) DEFAULT NULL COMMENT '角色id',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='用户角色关联表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='用户角色关联表';
 
 -- ----------------------------
 -- Records of role_user
@@ -335,7 +311,7 @@ CREATE TABLE `user` (
   `phone` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '手机',
   `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`,`username`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='用户表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='用户表';
 
 -- ----------------------------
 -- Records of user
@@ -358,4 +334,3 @@ CREATE TABLE `k8s_default_cluster` (
 
 
 SET FOREIGN_KEY_CHECKS = 1;
-

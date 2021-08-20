@@ -586,7 +586,7 @@ public class ClusterServiceImpl implements ClusterService {
             helmChartService.install("alertmanager", "monitoring",
                 componentsPath + File.separator + "alertmanager-1.5.1.tgz", cluster);
             MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
-            info.setProtocol("http").setPort("9093").setHost("alertmanager.monitoring");
+            info.setProtocol("http").setPort("31902").setHost(cluster.getHost());
             middlewareCluster.getSpec().getInfo().getMonitor().setAlertManager(info);
         } catch (Exception e) {
             log.error(ErrorMessage.HELM_INSTALL_ALERT_MANAGER_FAILED.getZhMsg());
