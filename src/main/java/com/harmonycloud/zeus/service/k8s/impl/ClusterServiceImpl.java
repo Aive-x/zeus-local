@@ -91,8 +91,8 @@ public class ClusterServiceImpl implements ClusterService {
     @Value("${k8s.component.logging.es.port:30092}")
     private String esPort;
 
-    @Value("${k8s.component.helm:/usr/local/zeus-pv/components}")
-    private String ComponentsPath;
+    @Value("${k8s.component.components:/usr/local/zeus-pv/components}")
+    private String componentsPath;
     @Value("${k8s.component.middleware:/usr/local/zeus-pv/middleware}")
     private String middlewarePath;
 
@@ -238,7 +238,7 @@ public class ClusterServiceImpl implements ClusterService {
             List<HelmListInfo> helmInfos = helmChartService.listHelm("", "", cluster);
             if (helmInfos.stream().noneMatch(info -> "middleware-controller".equals(info.getName()))) {
                 helmChartService.install("middleware-controller", "default",
-                    ComponentsPath + File.separator + "middleware-v1.0.0.tgz", cluster);
+                    componentsPath + File.separator + "middleware-v1.0.0.tgz", cluster);
             }
         } catch (Exception e) {
             throw new BusinessException(ErrorMessage.HELM_INSTALL_MIDDLEWARE_CONTROLLER_FAILED);
@@ -542,7 +542,7 @@ public class ClusterServiceImpl implements ClusterService {
         try {
             if (helmListInfos.stream().noneMatch(helm -> "local-path".equals(helm.getName()))) {
                 helmChartService.install("local-path", "middleware-operator",
-                    ComponentsPath + File.separator + "local-path-provisioner-0.1.0.tgz", cluster);
+                    componentsPath + File.separator + "local-path-provisioner-0.1.0.tgz", cluster);
             }
         } catch (Exception e) {
             throw new BusinessException(ErrorMessage.HELM_INSTALL_LOCAL_PATH_FAILED);
@@ -551,10 +551,10 @@ public class ClusterServiceImpl implements ClusterService {
         try {
             if (helmListInfos.stream().noneMatch(helm -> "prometheus".equals(helm.getName()))) {
                 helmChartService.install("prometheus", "default",
-                    ComponentsPath + File.separator + "prometheus-2.11.0.tgz", cluster);
+                    componentsPath + File.separator + "prometheus-2.11.0.tgz", cluster);
                 MiddlewareClusterMonitor monitor = new MiddlewareClusterMonitor();
                 MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
-                info.setProtocol("http").setPort("9090").setHost("prometheus-svc.monitoring");
+                info.setProtocol("http").setPort("31901").setHost(cluster.getHost());
                 monitor.setPrometheus(info);
                 middlewareCluster.getSpec().getInfo().setMonitor(monitor);
             }
@@ -565,17 +565,17 @@ public class ClusterServiceImpl implements ClusterService {
         try {
             if (helmListInfos.stream().noneMatch(helm -> "ingress".equals(helm.getName()))) {
                 helmChartService.install("ingress", "middleware-operator",
-                    ComponentsPath + File.separator + "ingress-nginx-0.24.1.tgz", cluster);
+                    componentsPath + File.separator + "ingress-nginx-0.24.1.tgz", cluster);
             }
         } catch (Exception e) {
             throw new BusinessException(ErrorMessage.HELM_INSTALL_NGINX_INGRESS_FAILED);
         }
         // 安装grafana
         try {
-            helmChartService.install("grafana", "monitoring", ComponentsPath + File.separator + "grafana-6.8.0.tgz",
+            helmChartService.install("grafana", "monitoring", componentsPath + File.separator + "grafana-6.8.0.tgz",
                 cluster);
             MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
-            info.setProtocol("http").setPort("31900").setHost("grafana.monitoring").setToken(
+            info.setProtocol("http").setPort("31900").setHost(cluster.getHost()).setToken(
                 "eyJhbGciOiJSUzI1NiIsImtpZCI6ImxNRlk4dEk2QlktYzJNUEZRem9kLUVDUnprMkFXRG5LTDZ0c2tZTDFBWjgifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLTdtcWpkIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJlNDFmMWMzMy02YWIxLTQ5NzktODMwYS1kNjU2M2ZlYTE4ZTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06YWRtaW4tdXNlciJ9.byMKYjzw-eXurnHJGjPEO1PJoH_cdFs-zEM9T5fEzKUIi1nBUF-rYXi-rHI1vq27mwzL3lVrbkGQxO0ckHndg-6x3dOdjtxF5xXLARbkT1mYnFiTAsC2AyS4GJPkCsjz8q902AxgQ5jtrWIjZjYcKNsOqSwNKBrw2JS5zTRS-ELYQuu21iIZnobHy51pVzkdZxT6IhrD6ONaaxloBp4VaOBh9kzCX4YnJGr3yzd14iuJA3X1LUrvgEthm_kSC9ql4g6DuCY4wbZOVMimPTwh6cJzSPm4Er653JMGSZDc5M2_4sTetmCLYhiwdHBVGMj0NHyqjRIBq7t4zGNp_3B4iA");
             middlewareCluster.getSpec().getInfo().getMonitor().setGrafana(info);
         } catch (Exception e) {
@@ -584,7 +584,7 @@ public class ClusterServiceImpl implements ClusterService {
         // 安装alertmanager
         try {
             helmChartService.install("alertmanager", "monitoring",
-                ComponentsPath + File.separator + "alertmanager-1.5.1.tgz", cluster);
+                componentsPath + File.separator + "alertmanager-1.5.1.tgz", cluster);
             MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
             info.setProtocol("http").setPort("9093").setHost("alertmanager.monitoring");
             middlewareCluster.getSpec().getInfo().getMonitor().setAlertManager(info);
