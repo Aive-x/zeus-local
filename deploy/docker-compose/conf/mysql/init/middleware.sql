@@ -117,16 +117,6 @@ CREATE TABLE `middleware_info` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='中间件表';
 
 -- ----------------------------
--- Records of middleware_info
--- ----------------------------
-BEGIN;
-INSERT INTO `middleware_info` VALUES (1, 'Mysql', '关系型数据库管理系统', 'Database', '8.0.21', 0x6D7973716C2E706E67, 'mysql-1.1.0-alpha.svg', 1, 'mysql', '1.1.0-alpha', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
-INSERT INTO `middleware_info` VALUES (2, 'Redis', '开源的可基于内存亦可持久化的Key-Value数据库', 'Database', '5.0.8', 0x72656469732E706E67, 'redis-5.0.8.svg', 1, 'redis', '5.0.8', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
-INSERT INTO `middleware_info` VALUES (3, 'Elasticsearch', '基于Lucene的搜索服务器', 'Database', '6.8.10', 0x656C61737469632E706E67, 'elasticsearch-6.8.10-1.svg', 1, 'elasticsearch', '6.8.10-1', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
-INSERT INTO `middleware_info` VALUES (4, 'RocketMQ', '阿里巴巴开源的消息中间件', 'MQ', '4.1.0', 0x726F636B65746D712E706E67, 'rocketmq-4.1.0.svg', 1, 'rocketmq', '4.1.0', '', NULL, '2020-01-15 17:00:00', NULL, '2021-08-04 10:51:54', NULL, 1);
-COMMIT;
-
--- ----------------------------
 -- Table structure for operation_audit
 -- ----------------------------
 DROP TABLE IF EXISTS `operation_audit`;
