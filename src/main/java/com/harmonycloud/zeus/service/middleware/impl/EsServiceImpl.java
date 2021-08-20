@@ -407,20 +407,24 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
     public void initEsIndexTemplate() throws Exception {
         List<MiddlewareClusterDTO> clusters = clusterService.listClusters();
         for (MiddlewareClusterDTO cluster : clusters) {
-            RestHighLevelClient esClient = getEsClient(cluster);
-            try {
-                //初始化mysql慢日志模板
-                initMysqlSlowLogIndexTemplete(esClient);
-                //初始化标准输入日志索引模板
-                initStdoutIndexTemplete(esClient);
-                //初始化文件日志索引模板
-                initLogstashIndexTemplete(esClient);
-                log.info("集群:{}索引模板初始化成功", cluster.getName());
-            } catch (Exception e) {
-                e.printStackTrace();
-                log.error("集群:{}索引模板初始化失败", cluster.getName(), e);
+            MiddlewareClusterLogging logging = cluster.getLogging();
+            if(logging == null | logging.getElasticSearch() == null){
+                log.info("集群未配置日志组件");
+                return;
             }
 
+            try {
+                RestHighLevelClient esClient = getEsClient(cluster);
+                //初始化mysql慢日志模板
+                initMysqlSlowLogIndexTemplate(esClient);
+                //初始化标准输入日志索引模板
+                initStdoutIndexTemplate(esClient);
+                //初始化文件日志索引模板
+                initLogstashIndexTemplate(esClient);
+                log.info("集群:{}索引模板初始化完成", cluster.getName());
+            } catch (Exception e) {
+                log.error("集群:{}索引模板初始化失败", cluster.getName(), e);
+            }
         }
     }
 
@@ -430,16 +434,15 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
      * @date 2021/7/20 3:56 下午
      * @param esClient
      */
-    public void initMysqlSlowLogIndexTemplete(RestHighLevelClient esClient){
+    public void initMysqlSlowLogIndexTemplate(RestHighLevelClient esClient){
         try {
             PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.MYSQL_SLOW_LOG.getName());
             JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.MYSQL_SLOW_LOG.getCode());
-            setCommonTemplete(request, codeJson);
+            setCommonTemplate(request, codeJson);
             esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
             log.info("mysql慢日志索引模板初始化成功");
         } catch (IOException e) {
             log.error("mysql慢日志索引模板初始化失败", e);
-            e.printStackTrace();
         }
     }
 
@@ -449,12 +452,12 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
      * @date 2021/7/21 9:30 上午
      * @param esClient
      */
-    public void initAuditIndexTemplete(RestHighLevelClient esClient){
+    public void initAuditIndexTemplate(RestHighLevelClient esClient){
         try {
             PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.AUDIT.getName());
 
             JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.AUDIT.getCode());
-            setCommonTemplete(request, codeJson);
+            setCommonTemplate(request, codeJson);
             JSONObject mappings = codeJson.getJSONObject("mappings").getJSONObject("user_op_audit");
             request.mapping(mappings.toString(), XContentType.JSON);
 
@@ -462,7 +465,49 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
             log.info("操作审计索引模板初始化成功");
         } catch (IOException e) {
             log.error("操作审计索引模板初始化失败", e);
-            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 初始化标准输出日志索引模板
+     * @author liyinlong
+     * @date 2021/8/11 4:54 下午
+     * @param esClient
+     */
+    public void initStdoutIndexTemplate(RestHighLevelClient esClient){
+        try {
+            PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.STDOUT.getName());
+
+            JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.STDOUT.getCode());
+            setCommonTemplate(request, codeJson);
+            JSONObject mappings = codeJson.getJSONObject("mappings").getJSONObject("doc");
+            request.mapping(mappings.toString(), XContentType.JSON);
+
+            esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
+            log.info("标准输出日志索引模板初始化成功");
+        } catch (IOException e) {
+            log.error("标准输出日志索引模板初始化失败", e);
+        }
+    }
+
+    /**
+     * 初始化文件日志索引模板
+     * @author liyinlong
+     * @date 2021/8/11 4:58 下午
+     * @param esClient
+     */
+    public void initLogstashIndexTemplate(RestHighLevelClient esClient){
+        try {
+            PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.LOG_STASH.getName());
+
+            JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.LOG_STASH.getCode());
+            setCommonTemplate(request, codeJson);
+            JSONObject mappings = codeJson.getJSONObject("mappings").getJSONObject("doc");
+            request.mapping(mappings.toString(), XContentType.JSON);
+            esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
+            log.info("文件日志索引模板logstash初始化成功");
+        } catch (IOException e) {
+            log.error("文件日志索引模板logstash初始化失败", e);
         }
     }
 
@@ -518,7 +563,7 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
      * @param request
      * @param codeJson
      */
-    public void setCommonTemplete(PutIndexTemplateRequest request, JSONObject codeJson){
+    public void setCommonTemplate(PutIndexTemplateRequest request, JSONObject codeJson){
         request.settings(codeJson.getJSONObject("settings").toString(), XContentType.JSON);
         ArrayList<String> list = new ArrayList<>();
         for (Object pattern : codeJson.getJSONArray("index_patterns")) {

@@ -3,7 +3,9 @@ package com.harmonycloud.zeus.service.middleware;
 import java.util.List;
 
 import com.github.pagehelper.PageInfo;
+import com.harmonycloud.caas.common.base.BaseResult;
 import com.harmonycloud.caas.common.model.AlertDTO;
+import com.harmonycloud.caas.common.model.MiddlewareDTO;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareMonitorDto;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareOverviewDTO;
 import com.harmonycloud.caas.common.model.middleware.MiddlewareStatusDto;
@@ -43,9 +45,10 @@ public interface OverviewService {
 
     /**
      * 平台总览
-     * @return middlewareOverviewDTO
+     * @param isChart 是否是图表
+     * @return 返回结果
      */
-    MiddlewareOverviewDTO getPlatformOverview();
+    BaseResult getPlatformOverview(Boolean isChart);
 
     /**
      * 获取告警记录
@@ -60,4 +63,11 @@ public interface OverviewService {
      */
     PageInfo<AlertDTO> getAlertRecord(String clusterId, String namespace, Integer current, Integer size, String level);
 
+    MiddlewareOverviewDTO getChartPlatformOverview();
+
+    /**
+     * 平台总览列表详细
+     * @return 列表
+     */
+    List<MiddlewareDTO> getListPlatformOverview();
 }

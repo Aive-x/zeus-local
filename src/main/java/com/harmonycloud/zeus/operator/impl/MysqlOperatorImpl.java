@@ -138,6 +138,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
 
             MysqlDTO mysqlDTO = new MysqlDTO();
             mysqlDTO.setReplicaCount(args.getIntValue(MysqlConstant.REPLICA_COUNT));
+            middleware.setMysqlDTO(mysqlDTO);
             // 获取关联实例信息
             Boolean isSource = args.getBoolean(MysqlConstant.IS_SOURCE);
             if (isSource != null) {
@@ -153,7 +154,6 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 mysqlDTO.setRelationNamespace(relationNamespace);
                 mysqlDTO.setRelationName(relationName);
                 mysqlDTO.setRelationAliasName(relationAliasName);
-                middleware.setMysqlDTO(mysqlDTO);
 
                 MysqlReplicateCRD mysqlReplicate;
                 if (isSource) {
@@ -164,7 +164,12 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 if (mysqlReplicate != null) {
                     mysqlDTO.setPhase(mysqlReplicate.getStatus().getPhase());
                     mysqlDTO.setCanSwitch(mysqlReplicate.getSpec().isEnable());
-                    //mysqlDTO.setLastUpdateTime(mysqlReplicate.getStatus().getSlaves().get(0).getLastSuccessTime());
+                    List<MysqlReplicateStatus.PodStatus> podStatuses = mysqlReplicate.getStatus().getSlaves();
+                    if (!CollectionUtils.isEmpty(podStatuses)) {
+                        MysqlReplicateStatus.PodStatus podStatus = podStatuses.get(0);
+                        String lastUpdateTime = podStatus.getLastUpdateTime();
+                        mysqlDTO.setLastUpdateTime(lastUpdateTime);
+                    }
                 }
             }
         }
@@ -738,7 +743,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                     }
                 }
             }
-        }else{
+        } else {
             log.info("未找到只读服务，无法创建MysqlReplicate");
         }
     }

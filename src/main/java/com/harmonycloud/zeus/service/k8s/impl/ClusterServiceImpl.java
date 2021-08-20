@@ -255,10 +255,10 @@ public class ClusterServiceImpl implements ClusterService {
             throw new BusinessException(DictEnum.CLUSTER, cluster.getNickname(), ErrorMessage.ADD_FAIL);
         }
 
-        // 初始化集群模板
+        // 初始化集群索引模板
         try {
             esService.initEsIndexTemplate();
-            log.info("集群:{}索引模板初始化成功", cluster.getName());
+            log.info("集群:{}索引模板初始化完成", cluster.getName());
         } catch (Exception e) {
             log.error("集群:{}索引模板初始化失败", cluster.getName(), e);
         }

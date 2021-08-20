@@ -15,11 +15,19 @@ import java.util.stream.Collectors;
 import com.alibaba.fastjson.JSONObject;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.harmonycloud.caas.common.base.BaseResult;
+import com.harmonycloud.caas.common.enums.middleware.MiddlewareTypeEnum;
+import com.harmonycloud.caas.common.model.MiddlewareDTO;
 import com.harmonycloud.caas.common.model.middleware.*;
 import com.harmonycloud.zeus.bean.BeanMiddlewareInfo;
+import com.harmonycloud.zeus.integration.cluster.ResourceQuotaWrapper;
+import com.harmonycloud.zeus.integration.cluster.bean.*;
 import com.harmonycloud.zeus.integration.registry.bean.harbor.HelmListInfo;
 import com.harmonycloud.zeus.service.registry.HelmChartService;
 import com.harmonycloud.zeus.service.middleware.OverviewService;
+import com.harmonycloud.zeus.util.DateUtil;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.ResourceQuota;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -41,8 +49,6 @@ import com.harmonycloud.caas.common.model.PrometheusResult;
 import com.harmonycloud.zeus.bean.BeanAlertRecord;
 import com.harmonycloud.zeus.dao.BeanAlertRecordMapper;
 import com.harmonycloud.zeus.integration.cluster.PrometheusWrapper;
-import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareCRD;
-import com.harmonycloud.zeus.integration.cluster.bean.MiddlewareInfo;
 import com.harmonycloud.zeus.service.k8s.ClusterService;
 import com.harmonycloud.zeus.service.k8s.MiddlewareCRDService;
 import com.harmonycloud.zeus.service.k8s.NamespaceService;
@@ -77,7 +83,8 @@ public class OverviewServiceImpl implements OverviewService {
     private ResourceQuotaService resourceQuotaService;
     @Autowired
     private BeanAlertRecordMapper beanAlertRecordMapper;
-
+    @Autowired
+    private ResourceQuotaWrapper resourceQuotaWrapper;
     /**
      * 查询中间件状态
      *
@@ -424,7 +431,7 @@ public class OverviewServiceImpl implements OverviewService {
      * @return middlewareOverviewDTO
      */
     @Override
-    public MiddlewareOverviewDTO getPlatformOverview(){
+    public MiddlewareOverviewDTO getChartPlatformOverview(){
         MiddlewareOverviewDTO overview = new MiddlewareOverviewDTO();
 
         List<MiddlewareClusterDTO> clusterDTOS = clusterService.listClusters();
@@ -578,4 +585,80 @@ public class OverviewServiceImpl implements OverviewService {
         return b1.add(b2).doubleValue();
     }
 
+    @Override
+    public List<MiddlewareDTO> getListPlatformOverview() {
+        //获取所有集群
+        List<MiddlewareClusterDTO> clusterDTOS = clusterService.listClusters();
+        List<MiddlewareDTO> middlewareDTOList = new ArrayList<>();
+        clusterDTOS.forEach(clusterDTO -> {
+            //获取所有分区namespaces
+            List<Namespace> namespaces = namespaceService.list(clusterDTO.getId(), true, true, true, null);
+            if (CollectionUtils.isEmpty(namespaces)) {
+                return;
+            }
+
+            //获取已注册分区
+            List<Namespace> registeredNamespace = namespaces.stream().filter(namespace -> namespace.isRegistered()).collect(Collectors.toList());
+            registeredNamespace.stream().forEach(namespace -> {
+                List<MiddlewareCRD> middlewareCRDS = middlewareCRDService.listCR(clusterDTO.getId(), namespace.getName(), null);
+                Map<String, List<String>> quotas = namespace.getQuotas();
+
+                String namespaceCpu = null;
+                String namespaceMemory = null;
+                if (quotas != null) {
+                    List<String> cpuList = quotas.get("cpu");
+                    if (!CollectionUtils.isEmpty(cpuList)) {
+                        namespaceCpu = cpuList.get(2) + "/" + cpuList.get(1);
+                    }
+                    List<String> memoryList = quotas.get("memory");
+                    if (!CollectionUtils.isEmpty(memoryList)) {
+                        namespaceMemory = memoryList.get(2) + "/" + memoryList.get(1);
+                    }
+                }
+
+                for (MiddlewareCRD middlewareCRD : middlewareCRDS) {
+                    MiddlewareDTO middlewareDTO = new MiddlewareDTO();
+                    middlewareDTO.setClusterName(clusterDTO.getName());
+                    middlewareDTO.setNamespace(namespace.getName());
+                    middlewareDTO.setNamespaceCpu(namespaceCpu);
+                    middlewareDTO.setNamespaceMemory(namespaceMemory);
+
+                    MiddlewareSpec spec = middlewareCRD.getSpec();
+                    if (spec != null) {
+                        middlewareDTO.setName(spec.getName());
+                        middlewareDTO.setType(MiddlewareTypeEnum.findByType(spec.getType()).getType());
+                    }
+
+                    MiddlewareStatus status = middlewareCRD.getStatus();
+                    if (status != null && status.getResources() != null) {
+                        MiddlewareResources resources = status.getResources();
+                        middlewareDTO.setStatus(status.getPhase());
+                        String creationTimestamp = status.getCreationTimestamp();
+                        String createTime = DateUtil.utc2Local(creationTimestamp, DateType.YYYY_MM_DD_T_HH_MM_SS_Z.getValue(), DateType.YYYY_MM_DD_HH_MM_SS.getValue());
+                        middlewareDTO.setCreateTime(createTime);
+                        middlewareDTO.setCreateDate(DateUtil.StringToDate(creationTimestamp, DateType.YYYY_MM_DD_T_HH_MM_SS_Z));
+                        Map<String, String> requests = resources.getRequests();
+                        if (requests != null) {
+                            String cpu = requests.get("cpu");
+                            String memory = requests.get("memory");
+                            middlewareDTO.setCpu(cpu);
+                            middlewareDTO.setMemory(memory);
+                        }
+                    }
+                    middlewareDTOList.add(middlewareDTO);
+                }
+            });
+        });
+        Collections.sort(middlewareDTOList);
+        return middlewareDTOList;
+    }
+
+    @Override
+    public BaseResult getPlatformOverview(Boolean isChart) {
+        if(isChart){
+            return BaseResult.ok(this.getChartPlatformOverview());
+        }else{
+            return BaseResult.ok(this.getListPlatformOverview());
+        }
+    }
 }
