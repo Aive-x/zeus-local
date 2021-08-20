@@ -522,7 +522,7 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
             PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.STDOUT.getName());
 
             JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.STDOUT.getCode());
-            setCommonTemplete(request, codeJson);
+            setCommonTemplate(request, codeJson);
             JSONObject mappings = codeJson.getJSONObject("mappings").getJSONObject("doc");
             request.mapping(mappings.toString(), XContentType.JSON);
 
@@ -545,7 +545,7 @@ public class EsServiceImpl extends AbstractMiddlewareService implements EsServic
             PutIndexTemplateRequest request = new PutIndexTemplateRequest(EsTemplateEnum.LOG_STASH.getName());
 
             JSONObject codeJson = JSONObject.parseObject(EsTemplateEnum.LOG_STASH.getCode());
-            setCommonTemplete(request, codeJson);
+            setCommonTemplate(request, codeJson);
             JSONObject mappings = codeJson.getJSONObject("mappings").getJSONObject("doc");
             request.mapping(mappings.toString(), XContentType.JSON);
             esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
