@@ -160,7 +160,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 } else {
                     mysqlReplicate = mysqlReplicateCRDService.getMysqlReplicate(cluster.getId(), middleware.getNamespace(), middleware.getName());
                 }
-                if (mysqlReplicate != null) {
+                if (mysqlReplicate != null && mysqlReplicate.getStatus() != null) {
                     mysqlDTO.setPhase(mysqlReplicate.getStatus().getPhase());
                     mysqlDTO.setCanSwitch(mysqlReplicate.getSpec().isEnable());
                     List<MysqlReplicateStatus.PodStatus> podStatuses = mysqlReplicate.getStatus().getSlaves();

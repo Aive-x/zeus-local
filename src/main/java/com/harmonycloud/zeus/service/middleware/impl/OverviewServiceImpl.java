@@ -636,6 +636,7 @@ public class OverviewServiceImpl implements OverviewService {
                         MiddlewareQuota middlewareQuota = quota.get(middlewareDTO.getType());
                         middlewareDTO.setCpu(middlewareQuota.getCpu());
                         middlewareDTO.setMemory(middlewareQuota.getMemory().replace("Gi", ""));
+                        middlewareDTO.setChartVersion(detail.getChartVersion());
                         //mysql实例判断是否是备实例
                         if (MiddlewareTypeEnum.MYSQL.getType().equals(MiddlewareTypeEnum.findTypeByCrdType(spec.getType()))) {
                             MysqlDTO mysqlDTO = detail.getMysqlDTO();
