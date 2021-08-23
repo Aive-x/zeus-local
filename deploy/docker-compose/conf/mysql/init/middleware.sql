@@ -132,8 +132,8 @@ CREATE TABLE `operation_audit` (
   `action_ch_desc` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '操作名称',
   `method` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '方法',
   `request_method` char(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '请求方法类型',
-  `request_params` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '请求参数',
-  `response` varchar(2048) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '响应内容',
+  `request_params` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '请求参数',
+  `response` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '响应内容',
   `remote_ip` char(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '请求ip',
   `status` char(8) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '状态码',
   `begin_time` datetime NOT NULL COMMENT '请求开始时间',
@@ -176,7 +176,6 @@ INSERT INTO `resource_menu` VALUES (5, 'instanceList', '实例列表', 'instance
 INSERT INTO `resource_menu` VALUES (6, 'outboundRoute', '对外路由', 'outboundRoute', 14, NULL, 1, NULL);
 INSERT INTO `resource_menu` VALUES (7, 'platformOverview', '资源总览', 'platformOverview', 21, NULL, 2, NULL);
 INSERT INTO `resource_menu` VALUES (8, 'basicResource', '基础资源', 'basicResource', 31, NULL, 3, NULL);
-INSERT INTO `resource_menu` VALUES (9, 'authManage', '授权管理', 'authManage', 32, NULL, 3, NULL);
 INSERT INTO `resource_menu` VALUES (10, 'operationAudit', '操作审计', 'operationAudit', 33, NULL, 3, NULL);
 INSERT INTO `resource_menu` VALUES (11, 'userManage', '用户管理', 'userManage', 34, NULL, 3, NULL);
 INSERT INTO `resource_menu` VALUES (12, 'serviceCatalog', '服务目录', 'serviceCatalog', 12, NULL, 1, NULL);

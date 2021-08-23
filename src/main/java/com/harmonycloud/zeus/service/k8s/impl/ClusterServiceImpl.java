@@ -237,8 +237,7 @@ public class ClusterServiceImpl implements ClusterService {
         try {
             List<HelmListInfo> helmInfos = helmChartService.listHelm("", "", cluster);
             if (helmInfos.stream().noneMatch(info -> "middleware-controller".equals(info.getName()))) {
-                helmChartService.install("middleware-controller", "default",
-                    componentsPath + File.separator + "middleware-v1.0.0.tgz", cluster);
+                middlewareController(cluster);
             }
         } catch (Exception e) {
             throw new BusinessException(ErrorMessage.HELM_INSTALL_MIDDLEWARE_CONTROLLER_FAILED);
@@ -536,13 +535,13 @@ public class ClusterServiceImpl implements ClusterService {
     }
 
     public void createComponents(MiddlewareClusterDTO cluster) {
+        String repository = cluster.getRegistry().getRegistryAddress() + "/" + cluster.getRegistry().getChartRepo();
         List<HelmListInfo> helmListInfos = helmChartService.listHelm("", "", cluster);
         MiddlewareCluster middlewareCluster = clusterWrapper.get(cluster.getDcId(), cluster.getName());
         // 安装local-path
         try {
             if (helmListInfos.stream().noneMatch(helm -> "local-path".equals(helm.getName()))) {
-                helmChartService.install("local-path", "middleware-operator",
-                    componentsPath + File.separator + "local-path-provisioner-0.1.0.tgz", cluster);
+                localPath(repository, cluster);
             }
         } catch (Exception e) {
             throw new BusinessException(ErrorMessage.HELM_INSTALL_LOCAL_PATH_FAILED);
@@ -550,8 +549,7 @@ public class ClusterServiceImpl implements ClusterService {
         // 安装prometheus
         try {
             if (helmListInfos.stream().noneMatch(helm -> "prometheus".equals(helm.getName()))) {
-                helmChartService.install("prometheus", "default",
-                    componentsPath + File.separator + "prometheus-2.11.0.tgz", cluster);
+                prometheus(repository, cluster);
                 MiddlewareClusterMonitor monitor = new MiddlewareClusterMonitor();
                 MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
                 info.setProtocol("http").setPort("31901").setHost(cluster.getHost());
@@ -564,16 +562,14 @@ public class ClusterServiceImpl implements ClusterService {
         // 安装ingress nginx
         try {
             if (helmListInfos.stream().noneMatch(helm -> "ingress".equals(helm.getName()))) {
-                helmChartService.install("ingress", "middleware-operator",
-                    componentsPath + File.separator + "ingress-nginx-0.24.1.tgz", cluster);
+                ingress(repository, cluster);
             }
         } catch (Exception e) {
             throw new BusinessException(ErrorMessage.HELM_INSTALL_NGINX_INGRESS_FAILED);
         }
         // 安装grafana
         try {
-            helmChartService.install("grafana", "monitoring", componentsPath + File.separator + "grafana-6.8.0.tgz",
-                cluster);
+            grafana(repository, cluster);
             MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
             info.setProtocol("http").setPort("31900").setHost(cluster.getHost()).setToken(
                 "eyJhbGciOiJSUzI1NiIsImtpZCI6ImxNRlk4dEk2QlktYzJNUEZRem9kLUVDUnprMkFXRG5LTDZ0c2tZTDFBWjgifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLTdtcWpkIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJlNDFmMWMzMy02YWIxLTQ5NzktODMwYS1kNjU2M2ZlYTE4ZTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06YWRtaW4tdXNlciJ9.byMKYjzw-eXurnHJGjPEO1PJoH_cdFs-zEM9T5fEzKUIi1nBUF-rYXi-rHI1vq27mwzL3lVrbkGQxO0ckHndg-6x3dOdjtxF5xXLARbkT1mYnFiTAsC2AyS4GJPkCsjz8q902AxgQ5jtrWIjZjYcKNsOqSwNKBrw2JS5zTRS-ELYQuu21iIZnobHy51pVzkdZxT6IhrD6ONaaxloBp4VaOBh9kzCX4YnJGr3yzd14iuJA3X1LUrvgEthm_kSC9ql4g6DuCY4wbZOVMimPTwh6cJzSPm4Er653JMGSZDc5M2_4sTetmCLYhiwdHBVGMj0NHyqjRIBq7t4zGNp_3B4iA");
@@ -583,8 +579,7 @@ public class ClusterServiceImpl implements ClusterService {
         }
         // 安装alertmanager
         try {
-            helmChartService.install("alertmanager", "monitoring",
-                componentsPath + File.separator + "alertmanager-1.5.1.tgz", cluster);
+            alertManager(repository, cluster);
             MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
             info.setProtocol("http").setPort("31902").setHost(cluster.getHost());
             middlewareCluster.getSpec().getInfo().getMonitor().setAlertManager(info);
@@ -596,6 +591,60 @@ public class ClusterServiceImpl implements ClusterService {
         } catch (IOException e) {
             log.error("集群{} 信息更新失败", cluster.getId());
         }
+    }
+
+    public void middlewareController(MiddlewareClusterDTO cluster){
+        String setValues = "global.repository=" + cluster.getRegistry().getRegistryAddress() + "/" + cluster.getRegistry().getChartRepo();
+        helmChartService.upgradeInstall("middleware-controller", "default", setValues,
+                componentsPath + File.separator + "platform", cluster);
+    }
+
+    public void localPath(String repository, MiddlewareClusterDTO cluster){
+        String setValues = "image.repository=" + repository + "/local-path-provisioner" +
+                ",storage.storageClassName=" + "local-path" +
+                ",helperImage.repository=" + repository + "/busybox" +
+                ",localPath.path=" + "/opt/local-path-provisioner";
+        helmChartService.upgradeInstall("local-path", "middleware-operator", setValues,
+                componentsPath + File.separator + "local-path-provisioner", cluster);
+    }
+
+    public void prometheus(String repository, MiddlewareClusterDTO cluster){
+        String setValues = "image.prometheus.repository=" + repository + "/prometheus" +
+                ",image.configmapReload.repository=" + repository + "/configmap-reload" +
+                ",image.nodeExporter.repository=" + repository + "/node-exporter" +
+                ",image.kubeRbacProxy.repository=" + repository + "/kube-rbac-proxy" +
+                ",image.prometheusAdapter.repository=" + repository + "/k8s-prometheus-adapter-amd64" +
+                ",image.prometheusOperator.repository=" + repository + "/prometheus-operator" +
+                ",image.kubeStateMetrics.repository=" + repository + "/kube-state-metrics" +
+                ",image.nodeExporter.repository=" + repository + "/node-exporter" +
+                ",image.grafana.repository=" + repository + "/grafana" +
+                ",image.dashboard.repository=" + repository + "/k8s-sidecar" +
+                ",image.busybox.repository=" + repository + "/grafana" +
+                ",storage.storageClass=" + "local-path";
+        helmChartService.upgradeInstall("prometheus", "default", setValues,
+                componentsPath + File.separator + "prometheus", cluster);
+    }
+
+    public void ingress(String repository, MiddlewareClusterDTO cluster) {
+        String setValues = "image.ingressRepository=" + repository +
+                ",image.backendRepository=" + repository +
+                ",image.keepalivedRepository=" + repository;
+        helmChartService.upgradeInstall("ingress", "middleware-operator", setValues,
+            componentsPath + File.separator + "ingress-nginx/charts/ingress-nginx", cluster);
+    }
+
+    public void grafana(String repository, MiddlewareClusterDTO cluster){
+        String setValues = "image.repository=" + repository + "/grafana" +
+                ",sidecar.image.repository=" + repository + "/k8s-sidecar" +
+                ",persistence.storageClassName=" + "local-path";
+        helmChartService.upgradeInstall("grafana", "monitoring", setValues,
+                componentsPath + File.separator + "grafana", cluster);
+    }
+
+    public void alertManager(String repository, MiddlewareClusterDTO cluster) {
+        String setValues = "image.alertmanager.repository=" + repository + "/alertmanager";
+        helmChartService.upgradeInstall("alertmanager", "monitoring", setValues,
+            componentsPath + File.separator + "alertmanager", cluster);
     }
 
 }
