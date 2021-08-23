@@ -23,6 +23,7 @@ import com.harmonycloud.zeus.bean.BeanMiddlewareInfo;
 import com.harmonycloud.zeus.integration.cluster.ResourceQuotaWrapper;
 import com.harmonycloud.zeus.integration.cluster.bean.*;
 import com.harmonycloud.zeus.integration.registry.bean.harbor.HelmListInfo;
+import com.harmonycloud.zeus.service.middleware.MiddlewareService;
 import com.harmonycloud.zeus.service.registry.HelmChartService;
 import com.harmonycloud.zeus.service.middleware.OverviewService;
 import com.harmonycloud.zeus.util.DateUtil;
@@ -30,6 +31,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ResourceQuota;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -85,6 +87,8 @@ public class OverviewServiceImpl implements OverviewService {
     private BeanAlertRecordMapper beanAlertRecordMapper;
     @Autowired
     private ResourceQuotaWrapper resourceQuotaWrapper;
+    @Autowired
+    private MiddlewareService middlewareService;
     /**
      * 查询中间件状态
      *
@@ -600,6 +604,7 @@ public class OverviewServiceImpl implements OverviewService {
             //获取已注册分区
             List<Namespace> registeredNamespace = namespaces.stream().filter(namespace -> namespace.isRegistered()).collect(Collectors.toList());
             registeredNamespace.stream().forEach(namespace -> {
+                //获取分区下所有实例
                 List<MiddlewareCRD> middlewareCRDS = middlewareCRDService.listCR(clusterDTO.getId(), namespace.getName(), null);
                 Map<String, List<String>> quotas = namespace.getQuotas();
 
@@ -625,25 +630,34 @@ public class OverviewServiceImpl implements OverviewService {
 
                     MiddlewareSpec spec = middlewareCRD.getSpec();
                     if (spec != null) {
-                        middlewareDTO.setName(spec.getName());
-                        middlewareDTO.setType(MiddlewareTypeEnum.findByType(spec.getType()).getType());
+                        middlewareDTO.setType(MiddlewareTypeEnum.findTypeByCrdType(spec.getType()));
+                        Middleware detail = middlewareService.detail(clusterDTO.getId(), namespace.getName(), spec.getName(), middlewareDTO.getType());
+                        Map<String, MiddlewareQuota> quota = detail.getQuota();
+                        MiddlewareQuota middlewareQuota = quota.get(middlewareDTO.getType());
+                        middlewareDTO.setCpu(middlewareQuota.getCpu());
+                        middlewareDTO.setMemory(middlewareQuota.getMemory().replace("Gi", ""));
+                        //mysql实例判断是否是备实例
+                        if (MiddlewareTypeEnum.MYSQL.getType().equals(MiddlewareTypeEnum.findTypeByCrdType(spec.getType()))) {
+                            MysqlDTO mysqlDTO = detail.getMysqlDTO();
+                            if (mysqlDTO != null) {
+                                if (mysqlDTO.getIsSource() != null && !mysqlDTO.getIsSource()) {
+                                    middlewareDTO.setName("(备)" + spec.getName());
+                                } else {
+                                    middlewareDTO.setName(spec.getName());
+                                }
+                            }
+                        } else {
+                            middlewareDTO.setName(spec.getName());
+                        }
                     }
 
                     MiddlewareStatus status = middlewareCRD.getStatus();
                     if (status != null && status.getResources() != null) {
-                        MiddlewareResources resources = status.getResources();
                         middlewareDTO.setStatus(status.getPhase());
                         String creationTimestamp = status.getCreationTimestamp();
                         String createTime = DateUtil.utc2Local(creationTimestamp, DateType.YYYY_MM_DD_T_HH_MM_SS_Z.getValue(), DateType.YYYY_MM_DD_HH_MM_SS.getValue());
                         middlewareDTO.setCreateTime(createTime);
                         middlewareDTO.setCreateDate(DateUtil.StringToDate(creationTimestamp, DateType.YYYY_MM_DD_T_HH_MM_SS_Z));
-                        Map<String, String> requests = resources.getRequests();
-                        if (requests != null) {
-                            String cpu = requests.get("cpu");
-                            String memory = requests.get("memory");
-                            middlewareDTO.setCpu(cpu);
-                            middlewareDTO.setMemory(memory);
-                        }
                     }
                     middlewareDTOList.add(middlewareDTO);
                 }
@@ -654,11 +668,9 @@ public class OverviewServiceImpl implements OverviewService {
     }
 
     @Override
-    public BaseResult getPlatformOverview(Boolean isChart) {
-        if(isChart){
-            return BaseResult.ok(this.getChartPlatformOverview());
-        }else{
-            return BaseResult.ok(this.getListPlatformOverview());
-        }
+    public BaseResult getPlatformOverview() {
+        MiddlewareOverviewDTO chartPlatformOverview = this.getChartPlatformOverview();
+        chartPlatformOverview.setMiddlewareDTOList(this.getListPlatformOverview());
+        return BaseResult.ok(chartPlatformOverview);
     }
 }

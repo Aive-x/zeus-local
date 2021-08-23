@@ -35,8 +35,8 @@ public class PlatformOverviewController {
 
     @ApiOperation(value = "平台总览", notes = "平台总览")
     @GetMapping
-    public BaseResult<MiddlewareOverviewDTO> getPlatformOverview(@RequestParam(value = "isChart", required = true) Boolean isChart) {
-        return BaseResult.ok(overviewService.getPlatformOverview(isChart));
+    public BaseResult getPlatformOverview() {
+        return overviewService.getPlatformOverview();
     }
 
     @ApiOperation(value = "查询告警记录", notes = "查询告警记录")

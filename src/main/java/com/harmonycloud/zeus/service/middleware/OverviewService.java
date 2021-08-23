@@ -45,10 +45,9 @@ public interface OverviewService {
 
     /**
      * 平台总览
-     * @param isChart 是否是图表
      * @return 返回结果
      */
-    BaseResult getPlatformOverview(Boolean isChart);
+    BaseResult getPlatformOverview();
 
     /**
      * 获取告警记录
