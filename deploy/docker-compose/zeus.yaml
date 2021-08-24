@@ -1,7 +1,7 @@
 version: '3.3'
 services:
   zeus-ui:
-    image: ${zeus_repository}caas-middleware-ui:${zeus_version}
+    image: ${zeus_repository}zeus-ui:${zeus_version}
     restart: always
     ports:
     - 30088:30088
@@ -26,7 +26,7 @@ services:
     - /data/zeus/helm:/usr/local/zeus-pv/helm
 
   zeus-mysql:
-    image: ${zeus_repository}caas-middleware-mysql:v1.0.0
+    image: ${zeus_repository}zeus-mysql:v1.0.0
     restart: always
     environment:
     - MYSQL_ROOT_PASSWORD=ZeuS@Middleware01
