@@ -624,6 +624,7 @@ public class OverviewServiceImpl implements OverviewService {
                 for (MiddlewareCRD middlewareCRD : middlewareCRDS) {
                     MiddlewareDTO middlewareDTO = new MiddlewareDTO();
                     middlewareDTO.setClusterName(clusterDTO.getName());
+                    middlewareDTO.setClusterId(clusterDTO.getId());
                     middlewareDTO.setNamespace(namespace.getName());
                     middlewareDTO.setNamespaceCpu(namespaceCpu);
                     middlewareDTO.setNamespaceMemory(namespaceMemory);
