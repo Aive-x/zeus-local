@@ -513,34 +513,36 @@ public class HelmChartServiceImpl extends AbstractRegistryService implements Hel
         try {
             MiddlewareClusterDTO cluster = clusterService.findById(clusterId);
             // 检查operator是否已创建
-            List<Namespace> namespaceList = namespaceService.list(clusterId, false, "middleware-operator");
-            // 检验分区是否存在
-            if (CollectionUtils.isEmpty(namespaceList)) {
-                // 创建namespace
-                io.fabric8.kubernetes.api.model.Namespace ns = new io.fabric8.kubernetes.api.model.Namespace();
-                Map<String, String> label = new HashMap<>(1);
-                label.put("middleware", "middleware");
-                ObjectMeta meta = new ObjectMeta();
-                meta.setName("middleware-operator");
-                meta.setLabels(label);
-                ns.setMetadata(meta);
-                namespaceService.save(clusterId, ns);
+            synchronized (this) {
+                List<Namespace> namespaceList = namespaceService.list(clusterId, false, "middleware-operator");
+                // 检验分区是否存在
+                if (CollectionUtils.isEmpty(namespaceList)) {
+                    // 创建namespace
+                    io.fabric8.kubernetes.api.model.Namespace ns = new io.fabric8.kubernetes.api.model.Namespace();
+                    Map<String, String> label = new HashMap<>(1);
+                    label.put("middleware", "middleware");
+                    ObjectMeta meta = new ObjectMeta();
+                    meta.setName("middleware-operator");
+                    meta.setLabels(label);
+                    ns.setMetadata(meta);
+                    namespaceService.save(clusterId, ns);
+                }
             }
             // 检验operator是否已创建
             List<HelmListInfo> helmListInfoList =
-                    this.listHelm("", helmChartFile.getDependency().get("alias"), cluster);
+                this.listHelm("", helmChartFile.getDependency().get("alias"), cluster);
             if (!CollectionUtils.isEmpty(helmListInfoList)) {
                 return;
             }
             // 获取地址
             String path = tempDirPath + File.separator + helmChartFile.getTarFileName()
-                    + helmChartFile.getDependency().get("repository").substring(8);
+                + helmChartFile.getDependency().get("repository").substring(8);
             File operatorDir = new File(path);
             if (operatorDir.exists()) {
                 // 创建operator
                 this.editOperatorChart(clusterId, path);
                 this.install(helmChartFile.getDependency().get("alias"), "middleware-operator",
-                        helmChartFile.getChartName(), helmChartFile.getChartVersion(), path, cluster);
+                    helmChartFile.getChartName(), helmChartFile.getChartVersion(), path, cluster);
             } else {
                 log.error("中间件{} operator包不存在", helmChartFile.getChartName());
                 throw new BusinessException(ErrorMessage.NOT_EXIST);

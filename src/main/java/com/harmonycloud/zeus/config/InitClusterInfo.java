@@ -27,7 +27,7 @@ public class InitClusterInfo implements ApplicationRunner {
             k8sClient.initClients();
             log.info("初始化集群信息成功");
         } catch (Exception e) {
-            log.error("初始化集群信息失败", e);
+            log.error("初始化集群信息失败");
         }
     }
 

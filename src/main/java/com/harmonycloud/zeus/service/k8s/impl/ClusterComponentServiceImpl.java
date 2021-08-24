@@ -194,6 +194,7 @@ public class ClusterComponentServiceImpl implements ClusterComponentService {
                 ",image.kubeRbacProxy.repository=" + repository + "/kube-rbac-proxy" +
                 ",image.prometheusAdapter.repository=" + repository + "/k8s-prometheus-adapter-amd64" +
                 ",image.prometheusOperator.repository=" + repository + "/prometheus-operator" +
+                ",image.prometheusConfigReloader.repository=" + repository + "/prometheus-config-reloader" +
                 ",image.kubeStateMetrics.repository=" + repository + "/kube-state-metrics" +
                 ",image.nodeExporter.repository=" + repository + "/node-exporter" +
                 ",image.grafana.repository=" + repository + "/grafana" +

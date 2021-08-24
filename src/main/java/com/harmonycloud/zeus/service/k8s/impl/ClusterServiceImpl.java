@@ -537,7 +537,6 @@ public class ClusterServiceImpl implements ClusterService {
     public void createComponents(MiddlewareClusterDTO cluster) {
         String repository = cluster.getRegistry().getRegistryAddress() + "/" + cluster.getRegistry().getChartRepo();
         List<HelmListInfo> helmListInfos = helmChartService.listHelm("", "", cluster);
-        MiddlewareCluster middlewareCluster = clusterWrapper.get(cluster.getDcId(), cluster.getName());
         // 安装local-path
         try {
             if (helmListInfos.stream().noneMatch(helm -> "local-path".equals(helm.getName()))) {
@@ -550,11 +549,6 @@ public class ClusterServiceImpl implements ClusterService {
         try {
             if (helmListInfos.stream().noneMatch(helm -> "prometheus".equals(helm.getName()))) {
                 prometheus(repository, cluster);
-                MiddlewareClusterMonitor monitor = new MiddlewareClusterMonitor();
-                MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
-                info.setProtocol("http").setPort("31901").setHost(cluster.getHost());
-                monitor.setPrometheus(info);
-                middlewareCluster.getSpec().getInfo().setMonitor(monitor);
             }
         } catch (Exception e) {
             throw new BusinessException(ErrorMessage.HELM_INSTALL_PROMETHEUS_FAILED);
@@ -570,27 +564,33 @@ public class ClusterServiceImpl implements ClusterService {
         // 安装grafana
         try {
             grafana(repository, cluster);
-            MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
-            info.setProtocol("http").setPort("31900").setHost(cluster.getHost()).setToken(
-                "eyJhbGciOiJSUzI1NiIsImtpZCI6ImxNRlk4dEk2QlktYzJNUEZRem9kLUVDUnprMkFXRG5LTDZ0c2tZTDFBWjgifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLTdtcWpkIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJlNDFmMWMzMy02YWIxLTQ5NzktODMwYS1kNjU2M2ZlYTE4ZTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06YWRtaW4tdXNlciJ9.byMKYjzw-eXurnHJGjPEO1PJoH_cdFs-zEM9T5fEzKUIi1nBUF-rYXi-rHI1vq27mwzL3lVrbkGQxO0ckHndg-6x3dOdjtxF5xXLARbkT1mYnFiTAsC2AyS4GJPkCsjz8q902AxgQ5jtrWIjZjYcKNsOqSwNKBrw2JS5zTRS-ELYQuu21iIZnobHy51pVzkdZxT6IhrD6ONaaxloBp4VaOBh9kzCX4YnJGr3yzd14iuJA3X1LUrvgEthm_kSC9ql4g6DuCY4wbZOVMimPTwh6cJzSPm4Er653JMGSZDc5M2_4sTetmCLYhiwdHBVGMj0NHyqjRIBq7t4zGNp_3B4iA");
-            middlewareCluster.getSpec().getInfo().getMonitor().setGrafana(info);
         } catch (Exception e) {
             log.error(ErrorMessage.HELM_INSTALL_GRAFANA_FAILED.getZhMsg());
         }
-        // 安装alertmanager
+        // 安装alertManager
         try {
             alertManager(repository, cluster);
-            MiddlewareClusterMonitorInfo info = new MiddlewareClusterMonitorInfo();
-            info.setProtocol("http").setPort("31902").setHost(cluster.getHost());
-            middlewareCluster.getSpec().getInfo().getMonitor().setAlertManager(info);
         } catch (Exception e) {
             log.error(ErrorMessage.HELM_INSTALL_ALERT_MANAGER_FAILED.getZhMsg());
         }
-        try {
-            clusterWrapper.update(middlewareCluster);
-        } catch (IOException e) {
-            log.error("集群{} 信息更新失败", cluster.getId());
-        }
+        //更新集群信息
+        MiddlewareClusterMonitor monitor = new MiddlewareClusterMonitor();
+        //prometheus
+        MiddlewareClusterMonitorInfo prometheus = new MiddlewareClusterMonitorInfo();
+        prometheus.setProtocol("http").setPort("31901").setHost(cluster.getHost());
+        monitor.setPrometheus(prometheus);
+        //grafana
+        MiddlewareClusterMonitorInfo grafana = new MiddlewareClusterMonitorInfo();
+        grafana.setProtocol("http").setPort("31900").setHost(cluster.getHost()).setToken(
+            "eyJhbGciOiJSUzI1NiIsImtpZCI6ImxNRlk4dEk2QlktYzJNUEZRem9kLUVDUnprMkFXRG5LTDZ0c2tZTDFBWjgifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLTdtcWpkIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJlNDFmMWMzMy02YWIxLTQ5NzktODMwYS1kNjU2M2ZlYTE4ZTUiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06YWRtaW4tdXNlciJ9.byMKYjzw-eXurnHJGjPEO1PJoH_cdFs-zEM9T5fEzKUIi1nBUF-rYXi-rHI1vq27mwzL3lVrbkGQxO0ckHndg-6x3dOdjtxF5xXLARbkT1mYnFiTAsC2AyS4GJPkCsjz8q902AxgQ5jtrWIjZjYcKNsOqSwNKBrw2JS5zTRS-ELYQuu21iIZnobHy51pVzkdZxT6IhrD6ONaaxloBp4VaOBh9kzCX4YnJGr3yzd14iuJA3X1LUrvgEthm_kSC9ql4g6DuCY4wbZOVMimPTwh6cJzSPm4Er653JMGSZDc5M2_4sTetmCLYhiwdHBVGMj0NHyqjRIBq7t4zGNp_3B4iA");
+        monitor.setGrafana(grafana);
+        //alertManager
+        MiddlewareClusterMonitorInfo alertManager = new MiddlewareClusterMonitorInfo();
+        alertManager.setProtocol("http").setPort("31902").setHost(cluster.getHost());
+        monitor.setAlertManager(alertManager);
+        //update
+        cluster.setMonitor(monitor);
+        this.update(cluster);
     }
 
     public void middlewareController(MiddlewareClusterDTO cluster){
@@ -615,6 +615,7 @@ public class ClusterServiceImpl implements ClusterService {
                 ",image.kubeRbacProxy.repository=" + repository + "/kube-rbac-proxy" +
                 ",image.prometheusAdapter.repository=" + repository + "/k8s-prometheus-adapter-amd64" +
                 ",image.prometheusOperator.repository=" + repository + "/prometheus-operator" +
+                ",image.prometheusConfigReloader.repository=" + repository + "/prometheus-config-reloader" +
                 ",image.kubeStateMetrics.repository=" + repository + "/kube-state-metrics" +
                 ",image.nodeExporter.repository=" + repository + "/node-exporter" +
                 ",image.grafana.repository=" + repository + "/grafana" +
