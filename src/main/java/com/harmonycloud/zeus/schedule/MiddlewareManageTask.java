@@ -55,4 +55,25 @@ public class MiddlewareManageTask {
     public void asyncSwitch(Middleware middleware, BaseOperator operator) {
         operator.switchMiddleware(middleware);
     }
+
+    /**
+     * 异步创建mysql对外服务
+     * @param mysqlOperator
+     * @param middleware
+     * @param serviceType
+     */
+    @Async("singleThreadExecutor")
+    public void asyncCreateMysqlOpenService(MysqlOperatorImpl mysqlOperator, Middleware middleware, String serviceType) {
+        mysqlOperator.tryCreateOpenService(middleware, serviceType);
+    }
+
+    /**
+     * 异步创建mysql灾备实例
+     * @param mysqlOperator
+     * @param middleware
+     */
+    @Async("singleThreadExecutor")
+    public void asyncCreateDisasterRecoveryMiddleware(MysqlOperatorImpl mysqlOperator, Middleware middleware){
+        mysqlOperator.createDisasterRecoveryMiddleware(middleware);
+    }
 }

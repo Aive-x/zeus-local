@@ -96,7 +96,7 @@ public class MysqlServiceImpl extends AbstractMiddlewareService implements Mysql
     public JSONObject queryAllAccessInfo(String clusterId, String namespace, String middlewareName) {
         List<IngressDTO> ingressDTOS = ingressService.get(clusterId, namespace, MiddlewareTypeEnum.MYSQL.name(), middlewareName);
         List<IngressDTO> serviceDTOList = ingressDTOS.stream().filter(ingressDTO -> (
-                ingressDTO.getName().contains("headless") && ingressDTO.getExposeType().equals(MIDDLEWARE_EXPOSE_NODEPORT))
+                ingressDTO.getName().endsWith(middlewareName + "-nodeport") && ingressDTO.getExposeType().equals(MIDDLEWARE_EXPOSE_NODEPORT))
         ).collect(Collectors.toList());
 
         JSONObject mysqlInfo = new JSONObject();

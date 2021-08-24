@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.harmonycloud.zeus.integration.cluster.bean.MysqlReplicateCRD;
 import com.harmonycloud.zeus.util.K8sClient;
 import io.fabric8.kubernetes.client.dsl.base.CustomResourceDefinitionContext;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -17,6 +18,7 @@ import static com.harmonycloud.caas.common.constants.middleware.MiddlewareConsta
  * @author liyinlong
  * @date 2021/8/11 2:22 下午
  */
+@Slf4j
 @Component
 public class MysqlReplicateWrapper {
 
@@ -61,7 +63,7 @@ public class MysqlReplicateWrapper {
         try {
             map = K8sClient.getClient(clusterId).customResource(CONTEXT).get(namespace, name);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("查询mysql复制关系出错了");
             return null;
         }
         if (CollectionUtils.isEmpty(map)) {

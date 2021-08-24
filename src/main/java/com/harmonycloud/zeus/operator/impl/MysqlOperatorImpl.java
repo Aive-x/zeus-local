@@ -179,10 +179,10 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
     @Override
     public void create(Middleware middleware, MiddlewareClusterDTO cluster) {
         super.create(middleware, cluster);
-        // 将headless服务通过NodePort对外暴露
-        this.createOpenService(middleware, "headless");
+        // 将服务通过NodePort对外暴露
+        middlewareManageTask.asyncCreateMysqlOpenService(this, middleware, middleware.getName());
         // 创建灾备实例
-        this.createDisasterRecoveryMiddleware(middleware);
+        middlewareManageTask.asyncCreateDisasterRecoveryMiddleware(this, middleware);
     }
 
     @Override
@@ -209,7 +209,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
 
         // 修改密码
         if (StringUtils.isNotBlank(middleware.getPassword())) {
-            sb.append("mysqlArgs.root_password=").append(middleware.getPassword()).append(",");
+            sb.append("args.root_password=").append(middleware.getPassword()).append(",");
         }
 
         // 修改关联实例信息
@@ -221,6 +221,10 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAMESPACE, mysqlDTO.getRelationNamespace()));
                 sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAME, mysqlDTO.getRelationName()));
             }
+        }
+
+        if (mysqlDTO != null && mysqlDTO.getType() != null) {
+            sb.append(String.format("%s=%s,", MysqlConstant.SPEC_TYPE, mysqlDTO.getType()));
         }
 
         // 没有修改，直接返回
@@ -586,6 +590,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 MiddlewareClusterDTO middlewareClusterDTO = clusterService.findById(clusterId);
                 mysqlDTO.setIsSource(!isSource);
                 mysqlDTO.setOpenDisasterRecoveryMode(false);
+                mysqlDTO.setType("master-slave");
                 update(middleware, middlewareClusterDTO);
 
                 Middleware disasterRecovery = middlewareService.detail(relationClusterId, relationNamespace, relationName, MiddlewareTypeEnum.MYSQL.getType());
@@ -594,6 +599,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 MysqlDTO disasterRecoveryMysqlDTO = disasterRecovery.getMysqlDTO();
                 disasterRecoveryMysqlDTO.setIsSource(isSource);
                 disasterRecoveryMysqlDTO.setOpenDisasterRecoveryMode(false);
+                disasterRecoveryMysqlDTO.setType("master-slave");
                 MiddlewareClusterDTO disasterRecoveryMiddlewareClusterDTO = clusterService.findById(relationClusterId);
                 update(disasterRecovery, disasterRecoveryMiddlewareClusterDTO);
 
@@ -655,6 +661,31 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
     }
 
     /**
+     * 尝试创建mysql对外服务，当实例状态为Running时才创建对外服务
+     * @param middleware 中间件信息
+     * @param serviceType 服务名称
+     */
+    public void tryCreateOpenService(Middleware middleware, String serviceType){
+        boolean success = false;
+        for (int i =0; i < 600 && !success; i++){
+            Middleware detail = middlewareService.detail(middleware.getClusterId(), middleware.getNamespace(), middleware.getName(), middleware.getType());
+            log.info("为实例：{}创建对外服务：状态：{},已用时：{}s", detail.getName(), detail.getStatus(), i);
+            if(detail != null){
+                if(detail.getStatus() != null && "Running".equals(detail.getStatus())){
+                    createOpenService(middleware, serviceType);
+                    success = true;
+                }
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    /**
      * 创建对外服务(NodePort)
      * @param middleware
      * @param serviceType 服务类型，readonly,headless
@@ -664,7 +695,6 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         log.info("创建对外服务，服务类型；{}", serviceType);
         List<ServicePortDTO> servicePortDTOS = serviceService.list(middleware.getClusterId(), middleware.getNamespace(), middleware.getName(), middleware.getType());
         List<ServicePortDTO> serviceList = servicePortDTOS.stream().filter(servicePortDTO -> servicePortDTO.getServiceName().endsWith(serviceType)).collect(Collectors.toList());
-
         if (!CollectionUtils.isEmpty(serviceList)) {
             ServicePortDTO servicePortDTO = serviceList.get(0);
             PortDetailDTO portDetailDTO = servicePortDTO.getPortDetailDtoList().get(0);
@@ -687,12 +717,13 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                     ingressDTO.setMiddlewareType(MiddlewareTypeEnum.MYSQL.getType());
                     ingressDTO.setServiceList(serviceDTOList);
                     ingressDTO.setExposeType(MIDDLEWARE_EXPOSE_NODEPORT);
+                    ingressDTO.setProtocol("TCP");
                     ingressService.create(middleware.getClusterId(), middleware.getNamespace(), middleware.getName(), ingressDTO);
                     successCreateService = true;
                     log.info("对外服务创建成功");
                 } catch (Exception e) {
                     servicePort++;
-                    log.error("对外服务创建失败，尝试端口：{}", servicePort, e);
+                    log.error("对外服务创建失败，尝试端口：{}", servicePort);
                     successCreateService = false;
                 }
             }
