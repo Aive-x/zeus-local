@@ -110,7 +110,7 @@ public class OverviewServiceImpl implements OverviewService {
             middlewares.stream().collect(Collectors.groupingBy(Middleware::getType));
         //获取imagePath
         List<BeanMiddlewareInfo> mwInfoList =  middlewareInfoService.list(null);
-        
+
         List<MiddlewareStatusDto> middlewareStatusDtoList = new ArrayList<>();
         middlewareMap.forEach((key, value) -> {
             MiddlewareStatusDto middlewareStatusDto = new MiddlewareStatusDto();
@@ -633,9 +633,11 @@ public class OverviewServiceImpl implements OverviewService {
                         middlewareDTO.setType(MiddlewareTypeEnum.findTypeByCrdType(spec.getType()));
                         Middleware detail = middlewareService.detail(clusterDTO.getId(), namespace.getName(), spec.getName(), middlewareDTO.getType());
                         Map<String, MiddlewareQuota> quota = detail.getQuota();
-                        MiddlewareQuota middlewareQuota = quota.get(middlewareDTO.getType());
-                        middlewareDTO.setCpu(middlewareQuota.getCpu());
-                        middlewareDTO.setMemory(middlewareQuota.getMemory().replace("Gi", ""));
+                        if (quota != null && quota.get(middlewareDTO.getType()) != null) {
+                            MiddlewareQuota middlewareQuota = quota.get(middlewareDTO.getType());
+                            middlewareDTO.setCpu(middlewareQuota.getCpu());
+                            middlewareDTO.setMemory(middlewareQuota.getMemory().replace("Gi", ""));
+                        }
                         middlewareDTO.setChartVersion(detail.getChartVersion());
                         //mysql实例判断是否是备实例
                         if (MiddlewareTypeEnum.MYSQL.getType().equals(MiddlewareTypeEnum.findTypeByCrdType(spec.getType()))) {
