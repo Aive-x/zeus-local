@@ -640,15 +640,12 @@ public class OverviewServiceImpl implements OverviewService {
                             middlewareDTO.setMemory(middlewareQuota.getMemory().replace("Gi", ""));
                         }
                         middlewareDTO.setChartVersion(detail.getChartVersion());
+                        middlewareDTO.setName(spec.getName());
                         //mysql实例判断是否是备实例
                         if (MiddlewareTypeEnum.MYSQL.getType().equals(MiddlewareTypeEnum.findTypeByCrdType(spec.getType()))) {
                             MysqlDTO mysqlDTO = detail.getMysqlDTO();
-                            if (mysqlDTO != null) {
-                                if (mysqlDTO.getIsSource() != null && !mysqlDTO.getIsSource()) {
-                                    middlewareDTO.setName("(备)" + spec.getName());
-                                } else {
-                                    middlewareDTO.setName(spec.getName());
-                                }
+                            if (mysqlDTO != null && mysqlDTO.getIsSource() != null) {
+                                middlewareDTO.setSource(mysqlDTO.getIsSource());
                             }
                         } else {
                             middlewareDTO.setName(spec.getName());
