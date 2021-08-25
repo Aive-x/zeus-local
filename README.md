@@ -1,6 +1,6 @@
-# Zeus
-
-[TBD]
+<div style="width: 100%;display:flex; justify-content:center;">
+    <img src="./doc/img/zeus-icon.svg" width="300">
+</div>
 
 ---
 - 一个基于稳定k8s架构的中间件平台，定位开放、稳定、轻量；
