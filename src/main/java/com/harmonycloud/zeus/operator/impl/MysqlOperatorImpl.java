@@ -175,6 +175,8 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                         String lastUpdateTime = podStatus.getLastUpdateTime();
                         mysqlDTO.setLastUpdateTime(DateUtil.utc2Local(lastUpdateTime, DateType.YYYY_MM_DD_HH_MM_SS.getValue(), DateType.YYYY_MM_DD_HH_MM_SS.getValue()));
                     }
+                }else{
+                    mysqlDTO.setOpenDisasterRecoveryMode(false);
                 }
             }
         }
@@ -221,12 +223,14 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         // 修改关联实例信息
         MysqlDTO mysqlDTO = middleware.getMysqlDTO();
         if (mysqlDTO != null && mysqlDTO.getOpenDisasterRecoveryMode() != null) {
-            if (mysqlDTO.getOpenDisasterRecoveryMode()) {
-                sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.IS_SOURCE, mysqlDTO.getIsSource()));
-                sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_CLUSTER_ID, mysqlDTO.getRelationClusterId()));
-                sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAMESPACE, mysqlDTO.getRelationNamespace()));
-                sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAME, mysqlDTO.getRelationName()));
-            }
+            sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.IS_SOURCE, mysqlDTO.getIsSource()));
+            sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_CLUSTER_ID, mysqlDTO.getRelationClusterId()));
+            sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAMESPACE, mysqlDTO.getRelationNamespace()));
+            sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAME, mysqlDTO.getRelationName()));
+        }
+
+        if (mysqlDTO != null && mysqlDTO.getType() != null) {
+            sb.append(String.format("%s=%s,", MysqlConstant.SPEC_TYPE, mysqlDTO.getType()));
         }
 
         if (mysqlDTO != null && mysqlDTO.getType() != null) {
@@ -804,7 +808,11 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_CLUSTER_ID, null));
                 str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAMESPACE, null));
                 str.append(String.format("%s.%s=%s", MysqlConstant.ARGS, MysqlConstant.RELATION_NAME, null));
-                helmChartService.upgrade(relation, str.toString(), cluster);
+                try {
+                    helmChartService.upgrade(relation, str.toString(), cluster);
+                } catch (Exception e) {
+                    log.error("更新信息中间件出错了", e);
+                }
             }
         }
     }

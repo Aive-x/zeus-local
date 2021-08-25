@@ -81,12 +81,24 @@ public class MysqlServiceImpl extends AbstractMiddlewareService implements Mysql
         Middleware middleware = middlewareService.detail(clusterId, namespace, middlewareName, MiddlewareTypeEnum.MYSQL.getType());
         JSONObject res = new JSONObject();
         JSONObject source = queryAllAccessInfo(clusterId, namespace, middlewareName);
+        source.put("password", middleware.getPassword());
+        source.put("clusterId", clusterId);
+        source.put("namespace", namespace);
+        source.put("middlewareName", middlewareName);
         MysqlDTO mysqlDTO = middleware.getMysqlDTO();
         if (mysqlDTO != null) {
             Boolean isSource = mysqlDTO.getIsSource();
             res.put(getInstanceType(isSource), source);
             if (isSource != null) {
-                JSONObject relation = queryAllAccessInfo(mysqlDTO.getRelationClusterId(), mysqlDTO.getRelationNamespace(), mysqlDTO.getRelationName());
+                String relationClusterId = mysqlDTO.getRelationClusterId();
+                String relationNamespace = mysqlDTO.getRelationNamespace();
+                String relationName = mysqlDTO.getRelationName();
+                Middleware relationMiddleware = middlewareService.detail(relationClusterId, relationNamespace, relationName, MiddlewareTypeEnum.MYSQL.getType());
+                JSONObject relation = queryAllAccessInfo(relationClusterId, relationNamespace, relationName);
+                relation.put("password", relationMiddleware.getPassword());
+                relation.put("clusterId", relationClusterId);
+                relation.put("namespace", relationNamespace);
+                relation.put("middlewareName", relationName);
                 res.put(getInstanceType(!isSource), relation);
             }
         }
