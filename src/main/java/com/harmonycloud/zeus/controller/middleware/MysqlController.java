@@ -107,7 +107,7 @@ public class MysqlController {
             @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
             @ApiImplicitParam(name = "mysqlName", value = "中间件名称", paramType = "path", dataTypeClass = String.class)
     })
-    @GetMapping("/{mysqlName}/disasterRecovery")
+    @PostMapping("/{mysqlName}/disasterRecovery")
     public BaseResult switchDisasterRecovery(@PathVariable("clusterId") String clusterId,
                                              @RequestParam("namespace") String namespace,
                                              @PathVariable("mysqlName") String mysqlName){
