@@ -97,6 +97,7 @@ public class MysqlServiceImpl extends AbstractMiddlewareService implements Mysql
                 JSONObject relation = queryAllAccessInfo(relationClusterId, relationNamespace, relationName);
                 relation.put("password", relationMiddleware.getPassword());
                 relation.put("clusterId", relationClusterId);
+                relation.put("namespace", relationNamespace);
                 relation.put("middlewareName", relationName);
                 res.put(getInstanceType(!isSource), relation);
             }
