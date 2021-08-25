@@ -43,7 +43,7 @@ public class OperationAuditInterceptor {
     @Autowired
     private OperationAuditService operationAuditService;
 
-    @Pointcut("@annotation(io.swagger.annotations.ApiOperation) && (!@annotation(com.harmonycloud.zeus.annotation.ExcludeAuditMethod))")
+    @Pointcut("@annotation(io.swagger.annotations.ApiOperation) && (!@annotation(com.harmonycloud.zeus.annotation.ExcludeAuditMethod)) &&(!@annotation(org.springframework.web.bind.annotation.GetMapping))")
     public void pointcut() {
 
     }

@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.harmonycloud.caas.common.constants.MysqlConstant;
+import com.harmonycloud.caas.common.enums.DateType;
 import com.harmonycloud.caas.common.model.middleware.*;
 import com.harmonycloud.zeus.integration.cluster.MysqlClusterWrapper;
 import com.harmonycloud.zeus.integration.cluster.bean.*;
@@ -20,7 +21,9 @@ import com.harmonycloud.zeus.service.k8s.MysqlReplicateCRDService;
 import com.harmonycloud.zeus.service.k8s.ServiceService;
 import com.harmonycloud.zeus.service.middleware.BackupService;
 import com.harmonycloud.zeus.service.middleware.impl.MiddlewareServiceImpl;
+import com.harmonycloud.zeus.util.DateUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.common.rounding.DateTimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
@@ -109,6 +112,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 mysqlArgs.put(MysqlConstant.RELATION_NAMESPACE, mysqlDTO.getRelationNamespace());
                 mysqlArgs.put(MysqlConstant.RELATION_NAME, mysqlDTO.getRelationName());
                 mysqlArgs.put(MysqlConstant.RELATION_ALIAS_NAME, mysqlDTO.getRelationAliasName());
+                mysqlArgs.put(MysqlConstant.CHART_NAME, middleware.getChartName());
             }
             if (StringUtils.isNotBlank(mysqlDTO.getType())) {
                 values.put(MysqlConstant.SPEC_TYPE, mysqlDTO.getType());
@@ -149,10 +153,12 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 String relationNamespace = args.getString(MysqlConstant.RELATION_NAMESPACE);
                 String relationName = args.getString(MysqlConstant.RELATION_NAME);
                 String relationAliasName = args.getString(MysqlConstant.RELATION_ALIAS_NAME);
+                String chartName = args.getString(MysqlConstant.CHART_NAME);
                 mysqlDTO.setRelationClusterId(relationClusterId);
                 mysqlDTO.setRelationNamespace(relationNamespace);
                 mysqlDTO.setRelationName(relationName);
                 mysqlDTO.setRelationAliasName(relationAliasName);
+                middleware.setChartName(chartName);
 
                 MysqlReplicateCRD mysqlReplicate;
                 if (isSource) {
@@ -167,7 +173,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                     if (!CollectionUtils.isEmpty(podStatuses)) {
                         MysqlReplicateStatus.PodStatus podStatus = podStatuses.get(0);
                         String lastUpdateTime = podStatus.getLastUpdateTime();
-                        mysqlDTO.setLastUpdateTime(lastUpdateTime);
+                        mysqlDTO.setLastUpdateTime(DateUtil.utc2Local(lastUpdateTime, DateType.YYYY_MM_DD_HH_MM_SS.getValue(), DateType.YYYY_MM_DD_HH_MM_SS.getValue()));
                     }
                 }
             }
@@ -241,16 +247,8 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
 
     @Override
     public void delete(Middleware middleware) {
+        this.deleteDisasterRecoveryInfo(middleware);
         super.delete(middleware);
-        // 删除灾备关联关系
-        try {
-            mysqlReplicateCRDService.deleteMysqlReplicate(middleware.getClusterId(), middleware.getNamespace(), middleware.getName());
-            log.info("mysql灾备关联关系删除成功");
-        } catch (IOException e) {
-            log.error("mysql灾备关联关系删除失败", e);
-            e.printStackTrace();
-        }
-
         // 删除备份
         String backupName = getBackupName(middleware);
         List<Backup> backupList = backupService.listBackup(middleware.getClusterId(), middleware.getNamespace());
@@ -777,5 +775,39 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
             log.info("未找到只读服务，无法创建MysqlReplicate");
         }
     }
+
+    /**
+     * 删除灾备关联关系和关联信息
+     * @param middleware
+     */
+    public void deleteDisasterRecoveryInfo(Middleware middleware) {
+        Middleware detail = middlewareService.detail(middleware.getClusterId(), middleware.getNamespace(), middleware.getName(), middleware.getType());
+        if (detail != null && detail.getMysqlDTO() != null) {
+            // 删除灾备关联关系
+            try {
+                mysqlReplicateCRDService.deleteMysqlReplicate(middleware.getClusterId(), middleware.getNamespace(), middleware.getName());
+                log.info("mysql灾备关联关系删除成功");
+            } catch (Exception e) {
+                log.error("mysql灾备关联关系删除失败", e);
+            }
+            MysqlDTO mysqlDTO = detail.getMysqlDTO();
+            if (mysqlDTO.getIsSource() != null) {
+                String relationClusterId = mysqlDTO.getRelationClusterId();
+                String relationNamespace = mysqlDTO.getRelationNamespace();
+                String relationName = mysqlDTO.getRelationName();
+                Middleware relation = middlewareService.detail(relationClusterId, relationNamespace, relationName, middleware.getType());
+                relation.setChartName(detail.getChartName());
+
+                MiddlewareClusterDTO cluster = clusterService.findById(relationClusterId);
+                StringBuilder str = new StringBuilder();
+                str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.IS_SOURCE, null));
+                str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_CLUSTER_ID, null));
+                str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAMESPACE, null));
+                str.append(String.format("%s.%s=%s", MysqlConstant.ARGS, MysqlConstant.RELATION_NAME, null));
+                helmChartService.upgrade(relation, str.toString(), cluster);
+            }
+        }
+    }
+
 
 }
