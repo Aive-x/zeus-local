@@ -219,34 +219,40 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
             RocketMQACL rocketMQACL = middleware.getRocketMQParam().getAcl();
             acl.put("enable", rocketMQACL.getEnable());
             acl.put("globalWhiteRemoteAddresses",
-                    new JSONArray(Arrays.asList(rocketMQACL.getGlobalWhiteRemoteAddresses().split(";"))));
+                new JSONArray(Arrays.asList(rocketMQACL.getGlobalWhiteRemoteAddresses().split(";"))));
             JSONArray accounts = new JSONArray();
             for (RocketMQAccount mqAccount : rocketMQACL.getRocketMQAccountList()) {
                 JSONObject account = new JSONObject();
                 account.put("accessKey", mqAccount.getAccessKey());
                 account.put("secretKey", mqAccount.getSecretKey());
-                account.put("whiteRemoteAddress", mqAccount.getWhiteRemoteAddress());
+                if (StringUtils.isNotEmpty(mqAccount.getWhiteRemoteAddress())) {
+                    account.put("whiteRemoteAddress", mqAccount.getWhiteRemoteAddress());
+                }
                 account.put("admin", mqAccount.getAdmin());
                 account.put("defaultTopicPerm", mqAccount.getTopicPerms().get("defaultTopicPerm"));
                 account.put("defaultGroupPerm", mqAccount.getGroupPerms().get("defaultGroupPerm"));
 
-                JSONArray topicPerms = new JSONArray();
-                for (String key : mqAccount.getTopicPerms().keySet()) {
-                    if ("defaultTopicPerm".equals(key)) {
-                        continue;
+                if (mqAccount.getTopicPerms().size() > 1) {
+                    JSONArray topicPerms = new JSONArray();
+                    for (String key : mqAccount.getTopicPerms().keySet()) {
+                        if ("defaultTopicPerm".equals(key)) {
+                            continue;
+                        }
+                        topicPerms.add(key + "=" + mqAccount.getTopicPerms().get(key));
                     }
-                    topicPerms.add(key + "=" + mqAccount.getTopicPerms().get(key));
+                    account.put("topicPerms", topicPerms);
                 }
-                account.put("topicPerms", topicPerms);
 
-                JSONArray groupPerms = new JSONArray();
-                for (String key : mqAccount.getGroupPerms().keySet()) {
-                    if ("defaultGroupPerm".equals(key)) {
-                        continue;
+                if (mqAccount.getGroupPerms().size() > 1) {
+                    JSONArray groupPerms = new JSONArray();
+                    for (String key : mqAccount.getGroupPerms().keySet()) {
+                        if ("defaultGroupPerm".equals(key)) {
+                            continue;
+                        }
+                        groupPerms.add(key + "=" + mqAccount.getGroupPerms().get(key));
                     }
-                    groupPerms.add(key + "=" + mqAccount.getGroupPerms().get(key));
+                    account.put("groupPerms", groupPerms);
                 }
-                account.put("groupPerms", groupPerms);
                 accounts.add(account);
             }
             acl.put("accounts", accounts);
@@ -279,7 +285,7 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
                 for (int i = 0; i < accounts.size(); ++i) {
                     RocketMQAccount account = new RocketMQAccount();
                     JSONObject jsonAccount = accounts.getJSONObject(i);
-                    account.setAccessKey(jsonAccount.getString("accessKey"));
+                    account.setAccessKey(jsonAccount.getOrDefault("accessKey", "").toString());
                     account.setAdmin(jsonAccount.getBooleanValue("admin"));
                     account.setSecretKey(jsonAccount.getString("secretKey"));
                     account.setWhiteRemoteAddress(jsonAccount.getString("whiteRemoteAddress"));
@@ -289,16 +295,19 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
                     topicPerms.put("defaultTopicPerm", jsonAccount.getString("defaultTopicPerm"));
                     groupPerms.put("defaultGroupPerm", jsonAccount.getString("defaultGroupPerm"));
 
-                    JSONArray jsonTopicPerms = jsonAccount.getJSONArray("topicPerms");
-                    for (int j = 0; j < jsonTopicPerms.size(); ++j) {
-                        String[] perm = jsonTopicPerms.getString(j).split("=");
-                        topicPerms.put(perm[0], perm[1]);
+                    if (jsonAccount.containsKey("topicPerms")) {
+                        JSONArray jsonTopicPerms = jsonAccount.getJSONArray("topicPerms");
+                        for (int j = 0; j < jsonTopicPerms.size(); ++j) {
+                            String[] perm = jsonTopicPerms.getString(j).split("=");
+                            topicPerms.put(perm[0], perm[1]);
+                        }
                     }
-
-                    JSONArray jsonGroupPerms = jsonAccount.getJSONArray("groupPerms");
-                    for (int j = 0; j < jsonGroupPerms.size(); ++j) {
-                        String[] perm = jsonGroupPerms.getString(j).split("=");
-                        groupPerms.put(perm[0], perm[1]);
+                    if (jsonAccount.containsKey("groupPerms")) {
+                        JSONArray jsonGroupPerms = jsonAccount.getJSONArray("groupPerms");
+                        for (int j = 0; j < jsonGroupPerms.size(); ++j) {
+                            String[] perm = jsonGroupPerms.getString(j).split("=");
+                            groupPerms.put(perm[0], perm[1]);
+                        }
                     }
 
                     account.setTopicPerms(topicPerms);
