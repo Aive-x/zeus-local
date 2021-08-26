@@ -188,7 +188,16 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
     public void create(Middleware middleware, MiddlewareClusterDTO cluster) {
         super.create(middleware, cluster);
         // 将服务通过NodePort对外暴露
-        middlewareManageTask.asyncCreateMysqlOpenService(this, middleware, middleware.getName());
+        MysqlDTO mysqlDTO = middleware.getMysqlDTO();
+        if (mysqlDTO != null) {
+            if (mysqlDTO.getIsSource() != null && !mysqlDTO.getIsSource()) {
+                //当前实例为灾备实例，灾备实例只读，不可写入，为该实例创建只读对外服务
+                middlewareManageTask.asyncCreateMysqlOpenService(this, middleware, true);
+            } else {
+                //当前实例为源实例或普通实例，实例可读写，为该实例创建可读写对外服务
+                middlewareManageTask.asyncCreateMysqlOpenService(this, middleware, false);
+            }
+        }
         // 创建灾备实例
         middlewareManageTask.asyncCreateDisasterRecoveryMiddleware(this, middleware);
     }
@@ -227,6 +236,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
             sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_CLUSTER_ID, mysqlDTO.getRelationClusterId()));
             sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAMESPACE, mysqlDTO.getRelationNamespace()));
             sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAME, mysqlDTO.getRelationName()));
+            sb.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_ALIAS_NAME, mysqlDTO.getRelationAliasName()));
         }
 
         if (mysqlDTO != null && mysqlDTO.getType() != null) {
@@ -269,7 +279,6 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         });
         // 删除定时备份任务
         scheduleBackupService.delete(middleware.getClusterId(), middleware.getNamespace(), middleware.getName());
-
     }
 
     /**
@@ -589,29 +598,14 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 String relationClusterId = mysqlDTO.getRelationClusterId();
                 String relationNamespace = mysqlDTO.getRelationNamespace();
                 String relationName = mysqlDTO.getRelationName();
-                MiddlewareClusterDTO middlewareClusterDTO = clusterService.findById(clusterId);
-                mysqlDTO.setIsSource(!isSource);
-                mysqlDTO.setOpenDisasterRecoveryMode(false);
-                mysqlDTO.setType("master-slave");
-                update(middleware, middlewareClusterDTO);
 
-                Middleware disasterRecovery = middlewareService.detail(relationClusterId, relationNamespace, relationName, MiddlewareTypeEnum.MYSQL.getType());
-                disasterRecovery.setChartName(MiddlewareTypeEnum.MYSQL.getType());
-                disasterRecovery.setClusterId(relationClusterId);
-                MysqlDTO disasterRecoveryMysqlDTO = disasterRecovery.getMysqlDTO();
-                disasterRecoveryMysqlDTO.setIsSource(isSource);
-                disasterRecoveryMysqlDTO.setOpenDisasterRecoveryMode(false);
-                disasterRecoveryMysqlDTO.setType("master-slave");
-                MiddlewareClusterDTO disasterRecoveryMiddlewareClusterDTO = clusterService.findById(relationClusterId);
-                update(disasterRecovery, disasterRecoveryMiddlewareClusterDTO);
-
+                //获取mysql复制关系，关闭复制关系
                 MysqlReplicateCRD mysqlReplicate;
                 if (isSource) {
                     mysqlReplicate = mysqlReplicateCRDService.getMysqlReplicate(relationClusterId, relationNamespace, relationName);
                 } else {
                     mysqlReplicate = mysqlReplicateCRDService.getMysqlReplicate(clusterId, namespace, middlewareName);
                 }
-
                 if (mysqlReplicate != null) {
                     log.info("开始关闭灾备复制,clusterId={}, namespace={}, middlewareName={}", clusterId, namespace, middlewareName);
                     mysqlReplicate.getSpec().setEnable(false);
@@ -620,6 +614,45 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
                 } else {
                     log.info("该实例不存在灾备实例");
                 }
+
+                try {
+                    MiddlewareClusterDTO middlewareClusterDTO = clusterService.findById(clusterId);
+                    mysqlDTO.setIsSource(null);
+                    mysqlDTO.setOpenDisasterRecoveryMode(false);
+                    mysqlDTO.setType("master-slave");
+                    update(middleware, middlewareClusterDTO);
+                } catch (Exception e) {
+                    log.error("实例信息更新失败", e);
+                }
+
+                try {
+                    Middleware disasterRecovery = middlewareService.detail(relationClusterId, relationNamespace, relationName, MiddlewareTypeEnum.MYSQL.getType());
+                    disasterRecovery.setChartName(MiddlewareTypeEnum.MYSQL.getType());
+                    disasterRecovery.setClusterId(relationClusterId);
+                    MysqlDTO disasterRecoveryMysqlDTO = disasterRecovery.getMysqlDTO();
+                    disasterRecoveryMysqlDTO.setIsSource(null);
+                    disasterRecoveryMysqlDTO.setOpenDisasterRecoveryMode(false);
+                    disasterRecoveryMysqlDTO.setType("master-slave");
+                    MiddlewareClusterDTO disasterRecoveryMiddlewareClusterDTO = clusterService.findById(relationClusterId);
+                    update(disasterRecovery, disasterRecoveryMiddlewareClusterDTO);
+                } catch (Exception e) {
+                    log.error("实例信息更新失败", e);
+                }
+
+                //灾备切换完成，为灾备实例创建对外可读写服务
+                Middleware oldDisasterRecovery;
+                if (isSource) {
+                    oldDisasterRecovery = middlewareService.detail(relationClusterId, relationNamespace, relationName, MiddlewareTypeEnum.MYSQL.getType());
+                    oldDisasterRecovery.setClusterId(relationClusterId);
+                    oldDisasterRecovery.setNamespace(relationNamespace);
+                    oldDisasterRecovery.setType(MiddlewareTypeEnum.MYSQL.getType());
+                } else {
+                    oldDisasterRecovery = middlewareService.detail(clusterId, namespace, middlewareName, MiddlewareTypeEnum.MYSQL.getType());
+                    oldDisasterRecovery.setClusterId(clusterId);
+                    oldDisasterRecovery.setNamespace(namespace);
+                    oldDisasterRecovery.setType(MiddlewareTypeEnum.MYSQL.getType());
+                }
+                middlewareManageTask.asyncCreateMysqlOpenService(this, oldDisasterRecovery, false);
             }
         }
     }
@@ -632,7 +665,7 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
         MysqlDTO mysqlDTO = middleware.getMysqlDTO();
         if (mysqlDTO.getOpenDisasterRecoveryMode() != null && mysqlDTO.getOpenDisasterRecoveryMode() && mysqlDTO.getIsSource()) {
             //1.为实例创建只读对外服务(NodePort)
-            this.createOpenService(middleware,  "readonly");
+            this.createOpenService(middleware,  true);
             //2.设置灾备实例信息，创建灾备实例
             //2.1 设置灾备实例信息
             Middleware relationMiddleware = middleware.getRelationMiddleware();
@@ -665,16 +698,16 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
     /**
      * 尝试创建mysql对外服务，当实例状态为Running时才创建对外服务
      * @param middleware 中间件信息
-     * @param serviceType 服务名称
+     * @param isReadonlyService 服务名称
      */
-    public void tryCreateOpenService(Middleware middleware, String serviceType){
+    public void tryCreateOpenService(Middleware middleware, Boolean isReadonlyService){
         boolean success = false;
         for (int i =0; i < 600 && !success; i++){
             Middleware detail = middlewareService.detail(middleware.getClusterId(), middleware.getNamespace(), middleware.getName(), middleware.getType());
             log.info("为实例：{}创建对外服务：状态：{},已用时：{}s", detail.getName(), detail.getStatus(), i);
             if(detail != null){
                 if(detail.getStatus() != null && "Running".equals(detail.getStatus())){
-                    createOpenService(middleware, serviceType);
+                    createOpenService(middleware, isReadonlyService);
                     success = true;
                 }
             }
@@ -689,14 +722,37 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
 
     /**
      * 创建对外服务(NodePort)
-     * @param middleware
-     * @param serviceType 服务类型，readonly,headless
+     * @param middleware mysql实例
+     * @param isReadonlyService 是否是只读服务
      */
-    public void createOpenService(Middleware middleware,String serviceType){
-        //1.获取所有服务
-        log.info("创建对外服务，服务类型；{}", serviceType);
+    public void createOpenService(Middleware middleware,Boolean isReadonlyService){
+        //1.获取所有对外服务，判断指定类型的服务是否已创建，如果已创建则直接返回
+        String nodePortServiceName;
+        String middlewareServiceNameSuffix;
+        if (isReadonlyService) {
+            nodePortServiceName = String.format("%s-readonly-nodeport", middleware.getName());
+            middlewareServiceNameSuffix = "readonly";
+        } else {
+            nodePortServiceName = String.format("%s-nodeport", middleware.getName());
+            middlewareServiceNameSuffix = middleware.getName();
+        }
+
+        List<IngressDTO> ingressDTOS = ingressService.get(middleware.getClusterId(), middleware.getNamespace(),
+                middleware.getType(), middleware.getName());
+        if (!CollectionUtils.isEmpty(ingressDTOS)) {
+            String finalServiceName = nodePortServiceName;
+            List<IngressDTO> ingressDTOList = ingressDTOS.stream().filter(ingressDTO -> (
+                    ingressDTO.getName().contains(finalServiceName) && ingressDTO.getExposeType().equals(MIDDLEWARE_EXPOSE_NODEPORT))
+            ).collect(Collectors.toList());
+            if (!CollectionUtils.isEmpty(ingressDTOList)) {
+                return;
+            }
+        }
+
+        log.info("创建对外服务，服务类型是否是只读；{}", isReadonlyService);
         List<ServicePortDTO> servicePortDTOS = serviceService.list(middleware.getClusterId(), middleware.getNamespace(), middleware.getName(), middleware.getType());
-        List<ServicePortDTO> serviceList = servicePortDTOS.stream().filter(servicePortDTO -> servicePortDTO.getServiceName().endsWith(serviceType)).collect(Collectors.toList());
+        String finalMiddlewareServiceNameSuffix = middlewareServiceNameSuffix;
+        List<ServicePortDTO> serviceList = servicePortDTOS.stream().filter(servicePortDTO -> servicePortDTO.getServiceName().endsWith(finalMiddlewareServiceNameSuffix)).collect(Collectors.toList());
         if (!CollectionUtils.isEmpty(serviceList)) {
             ServicePortDTO servicePortDTO = serviceList.get(0);
             PortDetailDTO portDetailDTO = servicePortDTO.getPortDetailDtoList().get(0);
@@ -787,31 +843,34 @@ public class MysqlOperatorImpl extends AbstractMysqlOperator implements MysqlOpe
     public void deleteDisasterRecoveryInfo(Middleware middleware) {
         Middleware detail = middlewareService.detail(middleware.getClusterId(), middleware.getNamespace(), middleware.getName(), middleware.getType());
         if (detail != null && detail.getMysqlDTO() != null) {
-            // 删除灾备关联关系
-            try {
-                mysqlReplicateCRDService.deleteMysqlReplicate(middleware.getClusterId(), middleware.getNamespace(), middleware.getName());
-                log.info("mysql灾备关联关系删除成功");
-            } catch (Exception e) {
-                log.error("mysql灾备关联关系删除失败", e);
-            }
             MysqlDTO mysqlDTO = detail.getMysqlDTO();
             if (mysqlDTO.getIsSource() != null) {
+                //将关联实例中存储的当前实例的信息置空
                 String relationClusterId = mysqlDTO.getRelationClusterId();
                 String relationNamespace = mysqlDTO.getRelationNamespace();
                 String relationName = mysqlDTO.getRelationName();
-                Middleware relation = middlewareService.detail(relationClusterId, relationNamespace, relationName, middleware.getType());
-                relation.setChartName(detail.getChartName());
-
-                MiddlewareClusterDTO cluster = clusterService.findById(relationClusterId);
-                StringBuilder str = new StringBuilder();
-                str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.IS_SOURCE, null));
-                str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_CLUSTER_ID, null));
-                str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAMESPACE, null));
-                str.append(String.format("%s.%s=%s", MysqlConstant.ARGS, MysqlConstant.RELATION_NAME, null));
+                Middleware relation = null;
                 try {
+                    relation = middlewareService.detail(relationClusterId, relationNamespace, relationName, middleware.getType());
+                    relation.setChartName(detail.getChartName());
+                    MiddlewareClusterDTO cluster = clusterService.findById(relationClusterId);
+                    StringBuilder str = new StringBuilder();
+                    str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.IS_SOURCE, null));
+                    str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_CLUSTER_ID, null));
+                    str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAMESPACE, null));
+                    str.append(String.format("%s.%s=%s,", MysqlConstant.ARGS, MysqlConstant.RELATION_NAME, null));
+                    str.append(String.format("%s.%s=%s", MysqlConstant.ARGS, MysqlConstant.RELATION_ALIAS_NAME, null));
                     helmChartService.upgrade(relation, str.toString(), cluster);
                 } catch (Exception e) {
-                    log.error("更新信息中间件出错了", e);
+                    log.error("更新关联实例信息出错了", e);
+                }
+
+                // 删除灾备关联关系
+                try {
+                    mysqlReplicateCRDService.deleteMysqlReplicate(middleware.getClusterId(), middleware.getNamespace(), middleware.getName());
+                    log.info("mysql灾备关联关系删除成功");
+                } catch (Exception e) {
+                    log.error("mysql灾备关联关系删除失败", e);
                 }
             }
         }

@@ -129,6 +129,20 @@ public class OperationAuditInterceptor {
             operationAudit.setUserName(userJson.getString("aliasName"));
             operationAudit.setRoleName(userJson.getString("roleName"));
             operationAudit.setPhone(userJson.getString("phone"));
+        } else {
+            if (result != null && result instanceof BaseResult) {
+                BaseResult<JSONObject> baseResult = (BaseResult<JSONObject>) result;
+                JSONObject resultData = baseResult.getData();
+                if (resultData != null) {
+                    String token = resultData.getString("token");
+                    resultEnum = JwtTokenComponent.checkToken(token);
+                    userJson = resultEnum.getValue();
+                    operationAudit.setAccount(userJson.getString("username"));
+                    operationAudit.setUserName(userJson.getString("aliasName"));
+                    operationAudit.setRoleName(userJson.getString("roleName"));
+                    operationAudit.setPhone(userJson.getString("phone"));
+                }
+            }
         }
 
         operationAudit.setBeginTime(beginTime);
