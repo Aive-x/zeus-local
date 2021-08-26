@@ -218,8 +218,10 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
         if (middleware.getRocketMQParam().getAcl().getEnable()) {
             RocketMQACL rocketMQACL = middleware.getRocketMQParam().getAcl();
             acl.put("enable", rocketMQACL.getEnable());
-            acl.put("globalWhiteRemoteAddresses",
-                new JSONArray(Arrays.asList(rocketMQACL.getGlobalWhiteRemoteAddresses().split(";"))));
+            if (StringUtils.isNotEmpty(rocketMQACL.getGlobalWhiteRemoteAddresses())) {
+                acl.put("globalWhiteRemoteAddresses",
+                    new JSONArray(Arrays.asList(rocketMQACL.getGlobalWhiteRemoteAddresses().split(";"))));
+            }
             JSONArray accounts = new JSONArray();
             for (RocketMQAccount mqAccount : rocketMQACL.getRocketMQAccountList()) {
                 JSONObject account = new JSONObject();
