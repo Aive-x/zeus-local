@@ -274,13 +274,15 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
                 RocketMQParam param = new RocketMQParam();
                 RocketMQACL acl = new RocketMQACL();
 
-                JSONArray globalWhiteRemoteAddresses = jsonAcl.getJSONArray("globalWhiteRemoteAddresses");
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < globalWhiteRemoteAddresses.size(); ++i) {
-                    builder.append(globalWhiteRemoteAddresses.get(i)).append(";");
-                }
-                acl.setGlobalWhiteRemoteAddresses(builder.toString());
                 acl.setEnable(true);
+                if (jsonAcl.containsKey("globalWhiteRemoteAddresses")) {
+                    JSONArray globalWhiteRemoteAddresses = jsonAcl.getJSONArray("globalWhiteRemoteAddresses");
+                    StringBuilder builder = new StringBuilder();
+                    for (int i = 0; i < globalWhiteRemoteAddresses.size(); ++i) {
+                        builder.append(globalWhiteRemoteAddresses.get(i)).append(";");
+                    }
+                    acl.setGlobalWhiteRemoteAddresses(builder.toString());
+                }
 
                 List<RocketMQAccount> accountList = new ArrayList<>();
                 JSONArray accounts = jsonAcl.getJSONArray("accounts");
