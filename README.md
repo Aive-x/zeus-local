@@ -1,6 +1,6 @@
-# Zeus
-
-[TBD]
+<p align="center">
+    <img src="./doc/img/zeus-icon.svg" alt="Zeus" width="300" />
+</p>
 
 ---
 - 一个基于稳定k8s架构的中间件平台，定位开放、稳定、轻量；
@@ -14,9 +14,6 @@
 - **按需伸缩**：中间件服务多实例部署，按需伸缩，优化资源使用效率
 - **全栈监控**：提供运行监控、事件告警、标准化日志等一条龙解决方案
 - **简易运维**：支持问题发现及快速暴露，部分问题可实现无干预自我治愈
-
-## UI展示
-> 图TBD
 
 ## 功能列表
 - 中间件上架
@@ -47,8 +44,8 @@ wget urlxxx
 ```
 完成下载&解压后执行
 ```
-tar -zxvf zeus-v1.0.0.tar
-cd zeus-v1.0.0-online && ./install.sh docker-compose online
+tar -zxvf zeus-v0.0.1.tar
+cd zeus-v0.0.1 && make install
 ```
 
 ## 支持组件版本

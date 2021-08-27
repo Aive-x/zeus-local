@@ -18,7 +18,7 @@ import io.swagger.annotations.ApiOperation;
  * @Author: zack chen
  * @Date: 2021/5/14 11:16 上午
  */
-@Api(tags = "middlewareUpload", value = "中间件上架", description = "中间件上架")
+@Api(tags = {"工作台","服务目录"}, value = "中间件上架", description = "中间件上架")
 @RestController
 @RequestMapping("/clusters/{clusterId}/middlewares/upload")
 public class MiddlewareUploadController {
