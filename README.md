@@ -47,8 +47,8 @@ wget urlxxx
 ```
 完成下载&解压后执行
 ```
-tar -zxvf zeus-v1.0.0.tar
-cd zeus-v1.0.0-online && ./install.sh docker-compose online
+tar -zxvf zeus-v0.0.1.tar
+cd zeus-v0.0.1 && make install
 ```
 
 ## 支持组件版本
