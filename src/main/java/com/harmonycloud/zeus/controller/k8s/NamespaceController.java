@@ -26,7 +26,7 @@ import io.swagger.annotations.ApiOperation;
  * @author dengyulong
  * @date 2021/03/25
  */
-@Api(tags = "namespace", value = "命名空间", description = "命名空间")
+@Api(tags = {"系统管理","基础资源"}, value = "命名空间", description = "命名空间")
 @RestController
 @RequestMapping("/clusters/{clusterId}/namespaces")
 public class NamespaceController {

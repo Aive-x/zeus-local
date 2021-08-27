@@ -26,7 +26,7 @@ import io.swagger.annotations.ApiOperation;
  * @author dengyulong
  * @date 2021/03/25
  */
-@Api(tags = "cluster", value = "集群", description = "集群")
+@Api(tags = {"系统管理","基础资源"}, value = "集群", description = "集群")
 @RestController
 @RequestMapping("/clusters")
 public class ClusterController {

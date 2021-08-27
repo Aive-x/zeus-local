@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
  * @author xutianhong
  * @Date 2021/4/26 3:51 下午
  */
-@Api(tags = "prometheusWebhook", value = "prometheus告警", description = "prometheus告警")
+@Api(tags = {"工作台","实例列表"}, value = "prometheus告警", description = "prometheus告警")
 @RestController
 @RequestMapping("/webhook")
 @Slf4j
