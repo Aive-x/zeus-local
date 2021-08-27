@@ -1,5 +1,6 @@
 package com.harmonycloud.zeus.interceptor;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.harmonycloud.caas.common.base.BaseResult;
 import com.harmonycloud.caas.common.constants.CommonConstant;
@@ -115,7 +116,7 @@ public class OperationAuditInterceptor {
                 if (baseResult.getData().toString().length() > CommonConstant.CHAR_2KB) {
                     operationAudit.setResponse(baseResult.getData().toString().substring(0, CommonConstant.CHAR_2KB));
                 } else {
-                    operationAudit.setResponse(baseResult.getData().toString());
+                    operationAudit.setResponse(JSON.toJSONString(baseResult.getData()));
                 }
             }
             operationAudit.setStatus(baseResult.getSuccess().toString());

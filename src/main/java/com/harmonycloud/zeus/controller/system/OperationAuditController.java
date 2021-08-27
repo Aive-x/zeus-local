@@ -2,6 +2,7 @@ package com.harmonycloud.zeus.controller.system;
 
 import com.harmonycloud.caas.common.base.BaseResult;
 import com.harmonycloud.caas.common.enums.ErrorMessage;
+import com.harmonycloud.zeus.annotation.ExcludeAuditMethod;
 import com.harmonycloud.zeus.bean.OperationAuditQueryDto;
 import com.harmonycloud.zeus.service.system.OperationAuditService;
 import io.swagger.annotations.Api;
@@ -34,6 +35,7 @@ public class OperationAuditController {
      * @param operationAuditQueryDto 查询条件
      * @return
      */
+    @ExcludeAuditMethod
     @ApiOperation(value = "查询操作审计列表", notes = "查询操作审计")
     @ResponseBody
     @RequestMapping(method = RequestMethod.POST)
