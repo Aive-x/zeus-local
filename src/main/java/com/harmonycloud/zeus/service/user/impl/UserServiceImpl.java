@@ -99,7 +99,7 @@ public class UserServiceImpl implements UserService {
         if (StringUtils.isNotEmpty(keyword)) {
             userDtoList = userDtoList.stream()
                 .filter(userDto -> StringUtils.containsIgnoreCase(userDto.getUserName(), keyword)
-                    || StringUtils.containsIgnoreCase(userDto.getUserName(), keyword)
+                    || StringUtils.containsIgnoreCase(userDto.getAliasName(), keyword)
                     || StringUtils.containsIgnoreCase(userDto.getEmail(), keyword)
                     || StringUtils.containsIgnoreCase(userDto.getPhone(), keyword)
                     || StringUtils.containsIgnoreCase(userDto.getRoleName(), keyword))

@@ -21,7 +21,7 @@ import io.swagger.annotations.ApiOperation;
  * @author xutianhong
  * @Date 2021/7/22 11:52 上午
  */
-@Api(tags = "user", value = "用户信息")
+@Api(tags = {"系统管理","用户管理"}, value = "用户信息")
 @RestController
 @RequestMapping("/user")
 public class UserController {

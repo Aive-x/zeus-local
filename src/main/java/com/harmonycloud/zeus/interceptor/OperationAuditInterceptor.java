@@ -1,5 +1,6 @@
 package com.harmonycloud.zeus.interceptor;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.harmonycloud.caas.common.base.BaseResult;
 import com.harmonycloud.caas.common.constants.CommonConstant;
@@ -43,7 +44,7 @@ public class OperationAuditInterceptor {
     @Autowired
     private OperationAuditService operationAuditService;
 
-    @Pointcut("@annotation(io.swagger.annotations.ApiOperation) && (!@annotation(com.harmonycloud.zeus.annotation.ExcludeAuditMethod))")
+    @Pointcut("@annotation(io.swagger.annotations.ApiOperation) && (!@annotation(com.harmonycloud.zeus.annotation.ExcludeAuditMethod)) &&(!@annotation(org.springframework.web.bind.annotation.GetMapping))")
     public void pointcut() {
 
     }
@@ -115,7 +116,7 @@ public class OperationAuditInterceptor {
                 if (baseResult.getData().toString().length() > CommonConstant.CHAR_2KB) {
                     operationAudit.setResponse(baseResult.getData().toString().substring(0, CommonConstant.CHAR_2KB));
                 } else {
-                    operationAudit.setResponse(baseResult.getData().toString());
+                    operationAudit.setResponse(JSON.toJSONString(baseResult.getData()));
                 }
             }
             operationAudit.setStatus(baseResult.getSuccess().toString());
@@ -129,6 +130,20 @@ public class OperationAuditInterceptor {
             operationAudit.setUserName(userJson.getString("aliasName"));
             operationAudit.setRoleName(userJson.getString("roleName"));
             operationAudit.setPhone(userJson.getString("phone"));
+        } else {
+            if (result != null && result instanceof BaseResult) {
+                BaseResult<JSONObject> baseResult = (BaseResult<JSONObject>) result;
+                JSONObject resultData = baseResult.getData();
+                if (resultData != null) {
+                    String token = resultData.getString("token");
+                    resultEnum = JwtTokenComponent.checkToken(token);
+                    userJson = resultEnum.getValue();
+                    operationAudit.setAccount(userJson.getString("username"));
+                    operationAudit.setUserName(userJson.getString("aliasName"));
+                    operationAudit.setRoleName(userJson.getString("roleName"));
+                    operationAudit.setPhone(userJson.getString("phone"));
+                }
+            }
         }
 
         operationAudit.setBeginTime(beginTime);

@@ -1,7 +1,6 @@
 package com.harmonycloud.zeus.schedule;
 
 import com.harmonycloud.zeus.operator.impl.MysqlOperatorImpl;
-import com.harmonycloud.zeus.service.middleware.impl.MiddlewareServiceImpl;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
@@ -54,5 +53,26 @@ public class MiddlewareManageTask {
     @Async("taskExecutor")
     public void asyncSwitch(Middleware middleware, BaseOperator operator) {
         operator.switchMiddleware(middleware);
+    }
+
+    /**
+     * 异步创建mysql对外服务
+     * @param mysqlOperator
+     * @param middleware
+     * @param isReadonlyService
+     */
+    @Async("singleThreadExecutor")
+    public void asyncCreateMysqlOpenService(MysqlOperatorImpl mysqlOperator, Middleware middleware, Boolean isReadonlyService) {
+        mysqlOperator.tryCreateOpenService(middleware, isReadonlyService);
+    }
+
+    /**
+     * 异步创建mysql灾备实例
+     * @param mysqlOperator
+     * @param middleware
+     */
+    @Async("singleThreadExecutor")
+    public void asyncCreateDisasterRecoveryMiddleware(MysqlOperatorImpl mysqlOperator, Middleware middleware){
+        mysqlOperator.createDisasterRecoveryMiddleware(middleware);
     }
 }

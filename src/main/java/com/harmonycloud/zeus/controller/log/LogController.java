@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletResponse;
  * @date 2021/6/17 5:48 下午
  */
 @Controller
-@Api(tags = {"系统管理", "应用日志"}, value = "应用日志")
+@Api(tags = {"工作台", "实例列表"}, value = "应用日志")
 @RequestMapping("/clusters/{clusterId}/namespaces/{namespace}/middlewares/{middlewareName}/applogs")
 public class LogController {
 

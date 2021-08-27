@@ -223,7 +223,7 @@ public abstract class AbstractBaseOperator {
         HelmChartFile helm = helmChartService.getHelmChartFromRegistry(middleware.getClusterId(),
             middleware.getNamespace(), middleware.getName(), middleware.getType());
         String alias;
-        if (CollectionUtils.isEmpty(helm.getDependency())){
+        if (!CollectionUtils.isEmpty(helm.getDependency())){
             alias = helm.getDependency().get("alias");
         }else {
             alias = mwInfo.getChartName() + "-operator";

@@ -6,6 +6,7 @@ import static com.harmonycloud.caas.common.constants.NameConstant.RESOURCES;
 
 import com.alibaba.fastjson.JSONArray;
 import com.harmonycloud.caas.common.model.middleware.*;
+import com.harmonycloud.zeus.service.k8s.PodService;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,6 +15,7 @@ import com.harmonycloud.caas.common.enums.middleware.RocketMQModeEnum;
 import com.harmonycloud.zeus.annotation.Operator;
 import com.harmonycloud.zeus.operator.api.MqOperator;
 import com.harmonycloud.zeus.operator.miiddleware.AbstractMqOperator;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
@@ -25,6 +27,9 @@ import java.util.*;
 @Operator(paramTypes4One = Middleware.class)
 public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
 
+    @Autowired
+    private PodService podService;
+    
     @Override
     public void replaceValues(Middleware middleware, MiddlewareClusterDTO cluster, JSONObject values) {
         // 替换通用的值
@@ -142,12 +147,19 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
         }
 
         //ACL认证修改
-        if (middleware.getRocketMQParam() != null && middleware.getRocketMQParam().getAcl() != null &&
-        middleware.getRocketMQParam().getAcl().getEnable() != null){
+        if (middleware.getRocketMQParam() != null && middleware.getRocketMQParam().getAcl() != null
+            && middleware.getRocketMQParam().getAcl().getEnable() != null) {
             JSONObject values = helmChartService.getInstalledValues(middleware, cluster);
             JSONObject newValues = JSONObject.parseObject(values.toJSONString());
             replaceACL(middleware, newValues);
             helmChartService.upgrade(middleware, values, newValues, cluster);
+            // 重启pod
+            String clusterId = cluster.getId();
+            Middleware ware =
+                podService.list(clusterId, middleware.getNamespace(), middleware.getName(), middleware.getType());
+            ware.getPods().stream().filter(podInfo -> podInfo.getPodName().contains("broker"))
+                .forEach(podInfo -> podService.restart(clusterId, middleware.getNamespace(), middleware.getName(),
+                    middleware.getType(), podInfo.getPodName()));
         }
 
         // 没有修改，直接返回
@@ -218,35 +230,45 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
         if (middleware.getRocketMQParam().getAcl().getEnable()) {
             RocketMQACL rocketMQACL = middleware.getRocketMQParam().getAcl();
             acl.put("enable", rocketMQACL.getEnable());
-            acl.put("globalWhiteRemoteAddresses",
-                    new JSONArray(Arrays.asList(rocketMQACL.getGlobalWhiteRemoteAddresses().split(";"))));
+            acl.put("globalWhiteRemoteAddresses", StringUtils.isNotEmpty(rocketMQACL.getGlobalWhiteRemoteAddresses())
+                ? Arrays.asList(rocketMQACL.getGlobalWhiteRemoteAddresses().split(";")) : "");
+            
             JSONArray accounts = new JSONArray();
             for (RocketMQAccount mqAccount : rocketMQACL.getRocketMQAccountList()) {
                 JSONObject account = new JSONObject();
                 account.put("accessKey", mqAccount.getAccessKey());
                 account.put("secretKey", mqAccount.getSecretKey());
-                account.put("whiteRemoteAddress", mqAccount.getWhiteRemoteAddress());
+                account.put("whiteRemoteAddress",
+                    StringUtils.isNotEmpty(mqAccount.getWhiteRemoteAddress()) ? mqAccount.getWhiteRemoteAddress() : "");
                 account.put("admin", mqAccount.getAdmin());
                 account.put("defaultTopicPerm", mqAccount.getTopicPerms().get("defaultTopicPerm"));
                 account.put("defaultGroupPerm", mqAccount.getGroupPerms().get("defaultGroupPerm"));
 
-                JSONArray topicPerms = new JSONArray();
-                for (String key : mqAccount.getTopicPerms().keySet()) {
-                    if ("defaultTopicPerm".equals(key)) {
-                        continue;
+                if (mqAccount.getTopicPerms().size() > 1) {
+                    JSONArray topicPerms = new JSONArray();
+                    for (String key : mqAccount.getTopicPerms().keySet()) {
+                        if ("defaultTopicPerm".equals(key)) {
+                            continue;
+                        }
+                        topicPerms.add(key + "=" + mqAccount.getTopicPerms().get(key));
                     }
-                    topicPerms.add(key + "=" + mqAccount.getTopicPerms().get(key));
+                    account.put("topicPerms", topicPerms);
+                } else {
+                    account.put("topicPerms", "");
                 }
-                account.put("topicPerms", topicPerms);
 
-                JSONArray groupPerms = new JSONArray();
-                for (String key : mqAccount.getGroupPerms().keySet()) {
-                    if ("defaultGroupPerm".equals(key)) {
-                        continue;
+                if (mqAccount.getGroupPerms().size() > 1) {
+                    JSONArray groupPerms = new JSONArray();
+                    for (String key : mqAccount.getGroupPerms().keySet()) {
+                        if ("defaultGroupPerm".equals(key)) {
+                            continue;
+                        }
+                        groupPerms.add(key + "=" + mqAccount.getGroupPerms().get(key));
                     }
-                    groupPerms.add(key + "=" + mqAccount.getGroupPerms().get(key));
+                    account.put("groupPerms", groupPerms);
+                } else {
+                    account.put("groupPerms", "");
                 }
-                account.put("groupPerms", groupPerms);
                 accounts.add(account);
             }
             acl.put("accounts", accounts);
@@ -266,20 +288,22 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
                 RocketMQParam param = new RocketMQParam();
                 RocketMQACL acl = new RocketMQACL();
 
-                JSONArray globalWhiteRemoteAddresses = jsonAcl.getJSONArray("globalWhiteRemoteAddresses");
-                StringBuilder builder = new StringBuilder();
-                for (int i = 0; i < globalWhiteRemoteAddresses.size(); ++i) {
-                    builder.append(globalWhiteRemoteAddresses.get(i)).append(";");
-                }
-                acl.setGlobalWhiteRemoteAddresses(builder.toString());
                 acl.setEnable(true);
+                JSONArray globalWhiteRemoteAddresses = jsonAcl.getJSONArray("globalWhiteRemoteAddresses");
+                if (globalWhiteRemoteAddresses != null){
+                    StringBuilder builder = new StringBuilder();
+                    for (Object globalWhiteRemoteAddress : globalWhiteRemoteAddresses) {
+                        builder.append(globalWhiteRemoteAddress).append(";");
+                    }
+                    acl.setGlobalWhiteRemoteAddresses(builder.toString());
+                }
 
                 List<RocketMQAccount> accountList = new ArrayList<>();
                 JSONArray accounts = jsonAcl.getJSONArray("accounts");
                 for (int i = 0; i < accounts.size(); ++i) {
                     RocketMQAccount account = new RocketMQAccount();
                     JSONObject jsonAccount = accounts.getJSONObject(i);
-                    account.setAccessKey(jsonAccount.getString("accessKey"));
+                    account.setAccessKey(jsonAccount.getOrDefault("accessKey", "").toString());
                     account.setAdmin(jsonAccount.getBooleanValue("admin"));
                     account.setSecretKey(jsonAccount.getString("secretKey"));
                     account.setWhiteRemoteAddress(jsonAccount.getString("whiteRemoteAddress"));
@@ -290,15 +314,19 @@ public class MqOperatorImpl extends AbstractMqOperator implements MqOperator {
                     groupPerms.put("defaultGroupPerm", jsonAccount.getString("defaultGroupPerm"));
 
                     JSONArray jsonTopicPerms = jsonAccount.getJSONArray("topicPerms");
-                    for (int j = 0; j < jsonTopicPerms.size(); ++j) {
-                        String[] perm = jsonTopicPerms.getString(j).split("=");
-                        topicPerms.put(perm[0], perm[1]);
+                    if (jsonTopicPerms != null) {
+                        for (int j = 0; j < jsonTopicPerms.size(); ++j) {
+                            String[] perm = jsonTopicPerms.getString(j).split("=");
+                            topicPerms.put(perm[0], perm[1]);
+                        }
                     }
 
                     JSONArray jsonGroupPerms = jsonAccount.getJSONArray("groupPerms");
-                    for (int j = 0; j < jsonGroupPerms.size(); ++j) {
-                        String[] perm = jsonGroupPerms.getString(j).split("=");
-                        groupPerms.put(perm[0], perm[1]);
+                    if (jsonGroupPerms != null) {
+                        for (int j = 0; j < jsonGroupPerms.size(); ++j) {
+                            String[] perm = jsonGroupPerms.getString(j).split("=");
+                            groupPerms.put(perm[0], perm[1]);
+                        }
                     }
 
                     account.setTopicPerms(topicPerms);

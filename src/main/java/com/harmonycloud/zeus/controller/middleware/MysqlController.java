@@ -17,7 +17,7 @@ import java.util.List;
  * @author dengyulong
  * @date 2021/03/23
  */
-@Api(tags = "mysql", value = "mysql中间件", description = "mysql中间件")
+@Api(tags = {"工作台","实例列表"}, value = "mysql中间件", description = "mysql中间件")
 @RestController
 @RequestMapping("/clusters/{clusterId}/middlewares/mysql")
 public class MysqlController {
@@ -107,7 +107,7 @@ public class MysqlController {
             @ApiImplicitParam(name = "namespace", value = "命名空间", paramType = "path", dataTypeClass = String.class),
             @ApiImplicitParam(name = "mysqlName", value = "中间件名称", paramType = "path", dataTypeClass = String.class)
     })
-    @GetMapping("/{mysqlName}/disasterRecovery")
+    @PostMapping("/{mysqlName}/disasterRecovery")
     public BaseResult switchDisasterRecovery(@PathVariable("clusterId") String clusterId,
                                              @RequestParam("namespace") String namespace,
                                              @PathVariable("mysqlName") String mysqlName){

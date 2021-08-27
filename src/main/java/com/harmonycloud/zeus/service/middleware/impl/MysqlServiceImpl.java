@@ -80,23 +80,48 @@ public class MysqlServiceImpl extends AbstractMiddlewareService implements Mysql
         // 获取对外访问信息
         Middleware middleware = middlewareService.detail(clusterId, namespace, middlewareName, MiddlewareTypeEnum.MYSQL.getType());
         JSONObject res = new JSONObject();
-        JSONObject source = queryAllAccessInfo(clusterId, namespace, middlewareName);
         MysqlDTO mysqlDTO = middleware.getMysqlDTO();
         if (mysqlDTO != null) {
             Boolean isSource = mysqlDTO.getIsSource();
-            res.put(getInstanceType(isSource), source);
-            if (isSource != null) {
-                JSONObject relation = queryAllAccessInfo(mysqlDTO.getRelationClusterId(), mysqlDTO.getRelationNamespace(), mysqlDTO.getRelationName());
-                res.put(getInstanceType(!isSource), relation);
+            JSONObject source = queryAllAccessInfo(clusterId, namespace, middlewareName, isSource);
+            source.put("password", middleware.getPassword());
+            source.put("clusterId", clusterId);
+            source.put("namespace", namespace);
+            source.put("middlewareName", middlewareName);
+            res.put(getInstanceType(isSource, mysqlDTO.getOpenDisasterRecoveryMode()), source);
+            if (isSource != null && mysqlDTO.getOpenDisasterRecoveryMode() != null && mysqlDTO.getOpenDisasterRecoveryMode()) {
+                String relationClusterId = mysqlDTO.getRelationClusterId();
+                String relationNamespace = mysqlDTO.getRelationNamespace();
+                String relationName = mysqlDTO.getRelationName();
+                Middleware relationMiddleware = middlewareService.detail(relationClusterId, relationNamespace, relationName, MiddlewareTypeEnum.MYSQL.getType());
+                MysqlDTO relationMiddlewareMysqlDTO = relationMiddleware.getMysqlDTO();
+                JSONObject relation;
+                if (relationMiddlewareMysqlDTO != null) {
+                    relation = queryAllAccessInfo(relationClusterId, relationNamespace, relationName, relationMiddlewareMysqlDTO.getIsSource());
+                } else {
+                    relation = queryAllAccessInfo(relationClusterId, relationNamespace, relationName, null);
+                }
+                relation.put("password", relationMiddleware.getPassword());
+                relation.put("clusterId", relationClusterId);
+                relation.put("namespace", relationNamespace);
+                relation.put("middlewareName", relationName);
+                res.put(getInstanceType(!isSource, relationMiddleware.getMysqlDTO().getOpenDisasterRecoveryMode()), relation);
             }
         }
         return BaseResult.ok(res);
     }
 
-    public JSONObject queryAllAccessInfo(String clusterId, String namespace, String middlewareName) {
+    public JSONObject queryAllAccessInfo(String clusterId, String namespace, String middlewareName,Boolean isSource) {
+        String nodePortServiceName;
+        if (isSource == null || isSource) {
+            nodePortServiceName = middlewareName + "-nodeport";
+        } else {
+            nodePortServiceName = middlewareName + "-readonly-nodeport";
+        }
+
         List<IngressDTO> ingressDTOS = ingressService.get(clusterId, namespace, MiddlewareTypeEnum.MYSQL.name(), middlewareName);
         List<IngressDTO> serviceDTOList = ingressDTOS.stream().filter(ingressDTO -> (
-                ingressDTO.getName().contains("headless") && ingressDTO.getExposeType().equals(MIDDLEWARE_EXPOSE_NODEPORT))
+                ingressDTO.getName().equals(nodePortServiceName) && ingressDTO.getExposeType().equals(MIDDLEWARE_EXPOSE_NODEPORT))
         ).collect(Collectors.toList());
 
         JSONObject mysqlInfo = new JSONObject();
@@ -119,7 +144,10 @@ public class MysqlServiceImpl extends AbstractMiddlewareService implements Mysql
      * @param isSource
      * @return
      */
-    public String getInstanceType(Boolean isSource) {
+    public String getInstanceType(Boolean isSource, Boolean openDisasterRecoveryMode) {
+        if (openDisasterRecoveryMode == null || !openDisasterRecoveryMode) {
+            return "source";
+        }
         if (isSource == null || isSource) {
             return "source";
         } else {
