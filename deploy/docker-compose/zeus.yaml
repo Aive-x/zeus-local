@@ -19,6 +19,8 @@ services:
     - JAVA_OPTS=-Xmx1024m -Xms1024m -Dspring.config.location=/cfg/application.yml
     links:
     - zeus-mysql
+    ports:
+    - 30089:8080
     depends_on:
     - zeus-mysql
     volumes:
