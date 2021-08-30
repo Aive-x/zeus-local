@@ -643,7 +643,8 @@ public class ClusterServiceImpl implements ClusterService {
     }
 
     public void alertManager(String repository, MiddlewareClusterDTO cluster) {
-        String setValues = "image.alertmanager.repository=" + repository + "/alertmanager";
+        String setValues = "image.alertmanager.repository=" + repository + "/alertmanager" +
+                ",clusterHost=" + cluster.getHost();
         helmChartService.upgradeInstall("alertmanager", "monitoring", setValues,
             componentsPath + File.separator + "alertmanager", cluster);
     }
