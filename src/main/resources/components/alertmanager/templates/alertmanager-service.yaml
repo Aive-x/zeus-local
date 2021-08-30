@@ -9,7 +9,8 @@ spec:
   - name: web
     port: 9093
     targetPort: web
+    nodePort: 31902
   selector:
-    alertmanager: main
+    alertmanager: alertmanager
     app: alertmanager
   sessionAffinity: ClientIP
