@@ -573,6 +573,12 @@ public class ClusterServiceImpl implements ClusterService {
         } catch (Exception e) {
             log.error(ErrorMessage.HELM_INSTALL_ALERT_MANAGER_FAILED.getZhMsg());
         }
+        // 安装minio
+        try{
+            minio(repository, cluster);
+        } catch (Exception e){
+            log.error(ErrorMessage.HELM_INSTALL_MINIO_FAILED.getZhMsg());
+        }
         //更新集群信息
         MiddlewareClusterMonitor monitor = new MiddlewareClusterMonitor();
         //prometheus
@@ -588,6 +594,17 @@ public class ClusterServiceImpl implements ClusterService {
         MiddlewareClusterMonitorInfo alertManager = new MiddlewareClusterMonitorInfo();
         alertManager.setProtocol("http").setPort("31902").setHost(cluster.getHost());
         monitor.setAlertManager(alertManager);
+        //minio
+        Map<String, String> storage = new HashMap<>();
+        storage.put("name", "minio");
+        storage.put("bucketName", "velero");
+        storage.put("accessKeyId", "minio");
+        storage.put("secretAccessKey", "minio123");
+        storage.put("endpoint", "http://" + cluster.getHost() + ":31909");
+        Map<String, Object> backup = new HashMap<>();
+        backup.put("type", "minio");
+        backup.put("storage", storage);
+        cluster.getStorage().put("backup", backup);
         //update
         cluster.setMonitor(monitor);
         this.update(cluster);
@@ -647,6 +664,15 @@ public class ClusterServiceImpl implements ClusterService {
                 ",clusterHost=" + cluster.getHost();
         helmChartService.upgradeInstall("alertmanager", "monitoring", setValues,
             componentsPath + File.separator + "alertmanager", cluster);
+    }
+
+    public void minio(String repository, MiddlewareClusterDTO cluster){
+        String setValues = "image.alertmanager=" + repository +
+                ",persistence.storageClass=local-path" +
+                ",minioArgs.bucketName=velero" +
+                ",service.nodePort=31909";
+        helmChartService.upgradeInstall("minio", "default", setValues,
+                componentsPath + File.separator + "minio/charts/minio", cluster);
     }
 
 }
